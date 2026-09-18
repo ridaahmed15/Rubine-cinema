@@ -1,0 +1,1725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RUBINE — cinema in every shade of red</title>
+<link href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
+<style>
+/* ============ tokens ============ */
+:root{
+  --theme:#B03060; --theme-hi:#D6508A;
+  --bg:#1D0813; --bg2:#2A0F1D; --bg3:#331325;
+  --ink:#F8EDF3; --muted:#C79AAE; --line:rgba(232,180,205,.14);
+  --gold:#E6B566;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+[hidden]{display:none!important}
+html{scrollbar-color:#4d2439 #1D0813}
+body{background:var(--bg);color:var(--ink);font-family:'Satoshi',sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body.lock{overflow:hidden}
+::selection{background:var(--theme);color:#fff}
+:focus-visible{outline:2px solid var(--theme-hi);outline-offset:2px}
+img{user-select:none}
+button{font-family:inherit}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.001s!important;transition-duration:.001s!important}}
+
+/* film grain over everything — the whole site sits under one projector */
+.grain{position:fixed;inset:0;z-index:2000;pointer-events:none;opacity:.05;
+  background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><rect width="180" height="180" filter="url(%23n)" opacity="0.55"/></svg>');
+  background-size:180px;animation:grainJ 1.1s steps(4) infinite}
+@keyframes grainJ{0%{background-position:0 0}25%{background-position:60px 30px}50%{background-position:120px 90px}75%{background-position:30px 150px}100%{background-position:0 0}}
+
+/* wordmark */
+.wm{font-family:'Clash Display';font-weight:700;letter-spacing:-.015em;display:inline-flex;align-items:baseline;gap:.14em;line-height:1}
+.wm i{display:inline-block;width:.13em;height:.13em;background:var(--theme)}
+.wm i{position:relative;top:-.02em}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:10px;border:0;cursor:pointer;font-weight:700;font-size:15px;padding:13px 26px;border-radius:9px;transition:background .25s,color .25s,transform .25s}
+.btn svg{width:19px;height:19px}
+.btn.play{background:var(--theme);color:#fff}
+.btn.play:hover{background:var(--theme-hi);transform:translateY(-1px)}
+.btn.ghost{background:rgba(248,237,243,.1);color:var(--ink);backdrop-filter:blur(6px)}
+.btn.ghost:hover{background:rgba(248,237,243,.2)}
+.btn.iconB{padding:13px;width:49px;justify-content:center}
+.btn.full{width:100%;justify-content:center}
+.hbadge{border:1px solid rgba(248,237,243,.45);padding:1px 7px;border-radius:4px;font-size:11.5px}
+
+/* ============ AUTH ============ */
+.auth{position:relative;min-height:100vh;background:var(--theme);overflow:hidden;transition:opacity .45s ease,transform .45s ease;display:grid;place-items:center}
+.auth.fade{opacity:0;transform:scale(1.015);pointer-events:none}
+.authBg{position:absolute;inset:0;overflow:hidden}
+.authWall{position:absolute;top:-4%;left:0;right:0;display:grid;grid-template-columns:repeat(6,1fr);animation:drift 75s linear infinite}
+.authWall img{width:100%;height:24vh;object-fit:cover;filter:brightness(.24) saturate(.65)}
+@keyframes drift{to{transform:translateY(-50%)}}
+.authShade{position:absolute;inset:0;background:rgba(110,22,54,.68);box-shadow:inset 0 0 240px rgba(20,5,12,.95)}
+.authWrap{position:relative;z-index:2;display:grid;grid-template-columns:1.05fr .95fr;gap:60px;align-items:center;width:min(1120px,100%);padding:64px 6vw}
+.authLeft{color:#fff}
+.authLeft .wm{font-size:clamp(58px,9vw,118px);color:#fff}
+.authLeft .wm i{background:#1D0813}
+.authTag{font-size:clamp(16px,1.6vw,20px);line-height:1.55;margin-top:22px;color:rgba(255,255,255,.88);max-width:420px}
+.authTicker{margin-top:44px;display:flex;gap:14px;align-items:center;background:rgba(20,5,12,.55);border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:12px 16px;max-width:400px;backdrop-filter:blur(6px);opacity:0;transition:opacity .5s}
+.authTicker.on{opacity:1}
+.tickThumb img{width:44px;height:64px;border-radius:6px;object-fit:cover;display:block}
+.tickLabel{font-size:10.5px;letter-spacing:.28em;color:rgba(255,255,255,.6)}
+.tickTitle{font-family:'Clash Display';font-size:17px;font-weight:600;margin-top:2px}
+.tickMeta{font-size:12px;color:rgba(255,255,255,.65);margin-top:2px}
+.authNote{position:absolute;bottom:16px;left:0;right:0;text-align:center;color:rgba(255,255,255,.5);font-size:12px;z-index:2}
+/* form card */
+.authCard{background:rgba(20,7,15,.93);border:1px solid rgba(248,237,243,.12);border-radius:18px;padding:32px;width:min(420px,100%);backdrop-filter:blur(8px);box-shadow:0 40px 90px rgba(0,0,0,.45)}
+.authTabs{display:grid;grid-template-columns:1fr 1fr;background:rgba(248,237,243,.06);border-radius:9px;padding:4px;margin-bottom:24px}
+.authTabs button{padding:10px;border:0;background:transparent;color:var(--muted);font-weight:700;border-radius:7px;cursor:pointer;transition:.25s}
+.authTabs button.on{background:var(--theme);color:#fff}
+.field{margin-bottom:15px}
+.field label{display:block;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;font-weight:500}
+.field .inWrap{position:relative}
+.field input{width:100%;background:#190811;border:1px solid var(--line);border-radius:9px;padding:13px 14px;color:var(--ink);font:inherit;font-size:15px;transition:border-color .25s}
+.field input:focus{outline:none;border-color:var(--theme)}
+.eye{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:0;color:var(--muted);cursor:pointer;width:34px;height:34px;display:grid;place-items:center;border-radius:7px}
+.eye:hover{color:var(--ink)}
+.eye svg{width:17px;height:17px}
+.fErr{color:#FFA5C0;font-size:12.5px;margin-top:6px;display:none}
+.fErr.on{display:block}
+.meter{height:4px;background:rgba(248,237,243,.12);border-radius:2px;margin-top:8px;overflow:hidden}
+.meterFill{display:block;height:100%;width:0;background:var(--theme);transition:width .3s,background .3s}
+.meterLbl{font-size:11.5px;color:var(--muted);margin-top:5px;min-height:14px}
+.fRow{display:flex;justify-content:space-between;align-items:center;margin:2px 2px 18px}
+.remember{display:flex;gap:8px;align-items:center;font-size:13.5px;color:var(--muted);cursor:pointer}
+.remember input{accent-color:var(--theme);width:15px;height:15px}
+.txtBtn{background:none;border:0;color:var(--muted);font-size:13.5px;cursor:pointer;padding:0}
+.txtBtn:hover{color:var(--ink)}
+.divider{display:flex;align-items:center;gap:12px;margin:18px 0;color:var(--muted);font-size:11px;letter-spacing:.22em}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--line)}
+.authFine{font-size:12px;color:var(--muted);margin-top:16px;text-align:center;line-height:1.5}
+
+/* ============ NAV ============ */
+.nav{position:fixed;top:0;left:0;right:0;z-index:400;display:flex;align-items:center;gap:30px;height:64px;padding:0 4vw;transition:background .3s,border-color .3s,backdrop-filter .3s;border-bottom:1px solid transparent}
+.nav.solid{background:rgba(24,7,16,.92);backdrop-filter:blur(10px);border-bottom-color:var(--line)}
+.nav .wm{font-size:21px;cursor:pointer}
+.nlink{position:relative;background:none;border:0;color:var(--muted);font-weight:500;font-size:14.5px;cursor:pointer;padding:6px 2px;transition:color .2s}
+.nlink:hover{color:var(--ink)}
+.nlink.on{color:var(--ink);font-weight:700}
+.nlink.on::after{content:'';position:absolute;left:0;right:0;bottom:-2px;height:2px;background:var(--theme);border-radius:2px}
+.navRight{margin-left:auto;display:flex;align-items:center;gap:18px}
+.navItem{position:relative}
+.navIcon{width:38px;height:38px;background:none;border:0;color:var(--ink);cursor:pointer;display:grid;place-items:center;border-radius:9px;position:relative}
+.navIcon:hover{background:rgba(248,237,243,.1)}
+.navIcon svg{width:20px;height:20px}
+.navIcon .dot{position:absolute;top:8px;right:8px;width:8px;height:8px;border-radius:50%;background:var(--theme-hi);border:2px solid var(--bg)}
+.ava{width:34px;height:34px;border-radius:9px;background:var(--theme);display:grid;place-items:center;font-weight:700;font-size:15px;cursor:pointer;border:0;color:#fff}
+.drop{position:absolute;top:48px;right:0;width:270px;background:rgba(23,8,16,.97);border:1px solid var(--line);border-radius:12px;padding:8px;box-shadow:0 24px 60px rgba(0,0,0,.55);z-index:10}
+.dTitle{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);padding:8px 10px 6px}
+.dItem{display:flex;align-items:center;gap:10px;width:100%;background:none;border:0;color:var(--ink);font-size:14px;padding:10px;border-radius:8px;cursor:pointer;text-align:left}
+.dItem:hover{background:rgba(176,48,96,.22)}
+.dItem svg{width:16px;height:16px;color:var(--muted)}
+.pName{padding:10px 10px 12px;border-bottom:1px solid var(--line);margin-bottom:6px}
+.pName b{font-size:15px}
+.pName small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.nItem{display:flex;gap:12px;padding:8px 10px;border-radius:8px;cursor:pointer}
+.nItem:hover{background:rgba(176,48,96,.22)}
+.nItem img{width:36px;height:54px;border-radius:5px;object-fit:cover;flex:none}
+.nItem em{display:block;font-style:normal;font-size:10px;letter-spacing:.2em;color:var(--gold)}
+.nItem b{display:block;font-size:14px;margin-top:1px}
+.nItem small{display:block;color:var(--muted);font-size:12px;margin-top:1px}
+/* nav search */
+.navSearch{position:relative;display:flex;align-items:center;gap:8px;border:1px solid transparent;padding:6px 10px;border-radius:9px;transition:border-color .3s,background .3s;color:var(--muted)}
+.navSearch.open{border-color:var(--line);background:rgba(21,7,16,.85)}
+.navSearch svg{width:18px;height:18px;cursor:pointer}
+.navSearch input{width:0;transition:width .3s;background:transparent;border:0;color:var(--ink);font:inherit;font-size:14px;outline:none}
+.navSearch.open input{width:min(200px,34vw)}
+.sDrop{position:absolute;top:48px;right:0;width:330px;background:rgba(23,8,16,.97);border:1px solid var(--line);border-radius:12px;padding:8px;box-shadow:0 24px 60px rgba(0,0,0,.55)}
+.sItem{display:flex;gap:12px;align-items:center;padding:8px 10px;border-radius:8px;cursor:pointer}
+.sItem:hover{background:rgba(176,48,96,.22)}
+.sItem img{width:36px;height:54px;border-radius:5px;object-fit:cover;flex:none}
+.sItem b{display:block;font-size:14px}
+.sItem small{display:block;color:var(--muted);font-size:12px;margin-top:1px}
+.sEmpty{padding:16px 12px;color:var(--muted);font-size:13.5px}
+.sAll{width:100%;background:none;border:0;border-top:1px solid var(--line);margin-top:6px;padding:11px;color:var(--theme-hi);font-weight:700;font-size:13.5px;cursor:pointer}
+.sAll:hover{color:var(--ink)}
+
+/* ============ APP / HERO ============ */
+#app.enter{animation:appIn .6s ease}
+@keyframes appIn{from{opacity:0}}
+.view{min-height:70vh}
+.hero{position:relative;height:clamp(480px,82vh,820px);margin-top:0}
+.heroImg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 1.1s ease;filter:brightness(.8) saturate(.95);background:var(--bg3)}
+.heroImg.on{opacity:1;animation:kb 22s ease-in-out infinite alternate}
+@keyframes kb{from{transform:scale(1.02)}to{transform:scale(1.15)}}
+.heroScrim{position:absolute;inset:0;background:linear-gradient(90deg,rgba(29,8,19,.85) 0,rgba(29,8,19,.3) 48%,transparent 72%),linear-gradient(to top,var(--bg) 0,rgba(29,8,19,.15) 42%,rgba(29,8,19,.4) 100%)}
+.heroBody{position:absolute;left:4vw;bottom:104px;max-width:620px;z-index:2}
+.heroEyebrow{font-size:12.5px;letter-spacing:.32em;text-transform:uppercase;color:var(--ink);font-weight:700}
+.heroEyebrow i{font-style:normal;color:var(--theme-hi);margin:0 7px}
+.heroTitle{font-family:'Clash Display';font-weight:700;font-size:clamp(38px,6.4vw,84px);line-height:.98;letter-spacing:-.01em;margin:16px 0 18px;text-shadow:0 2px 30px rgba(0,0,0,.45)}
+.heroMeta{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font-size:15px;color:var(--muted)}
+.heroMeta b{color:var(--gold)}
+.heroSyn{margin-top:16px;max-width:520px;color:#E9D3DE;line-height:1.55;font-size:15.5px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.heroBtns{display:flex;gap:12px;margin-top:26px;flex-wrap:wrap}
+.heroBody .in{animation:riseIn .8s cubic-bezier(.2,.8,.2,1) both}
+.heroEyebrow.in{animation-delay:.02s}.heroTitle.in{animation-delay:.08s}.heroMeta.in{animation-delay:.18s}.heroSyn.in{animation-delay:.26s}.heroBtns.in{animation-delay:.34s}
+@keyframes riseIn{from{opacity:0;transform:translateY(26px)}}
+.heroDots{position:absolute;right:4vw;bottom:64px;display:flex;gap:8px;z-index:3}
+.hd{width:54px;height:4px;background:rgba(248,237,243,.25);border:0;cursor:pointer;position:relative;overflow:hidden;border-radius:2px;padding:0}
+.hd .fill{position:absolute;inset:0;background:var(--ink);transform:scaleX(0);transform-origin:left}
+.hd.on .fill{animation:hfill 9s linear forwards}
+@keyframes hfill{to{transform:scaleX(1)}}
+
+/* ============ ROWS / CARDS ============ */
+.rowHead{display:flex;justify-content:space-between;align-items:baseline;padding:0 4vw;margin-top:44px}
+.rowTitle{font-family:'Clash Display';font-size:22px;font-weight:600}
+.rowMore{display:inline-flex;align-items:center;gap:4px;background:none;border:0;color:var(--muted);font-size:13px;cursor:pointer;opacity:0;transition:opacity .25s,color .2s;padding:0}
+.row:hover .rowMore{opacity:1}
+.rowMore:hover{color:var(--ink)}
+.rowMore svg{width:14px;height:14px}
+.rowScroller{display:flex;gap:14px;overflow-x:auto;padding:16px 4vw 36px;scrollbar-width:none}
+.rowScroller::-webkit-scrollbar{display:none}
+.row{position:relative}
+.rowArrow{position:absolute;top:56px;bottom:36px;width:54px;border:0;background:rgba(21,7,16,.65);color:var(--ink);cursor:pointer;opacity:0;transition:opacity .25s,background .25s;display:grid;place-items:center;z-index:40;backdrop-filter:blur(4px)}
+.row:hover .rowArrow{opacity:1}
+.rowArrow:hover{background:rgba(176,48,96,.85)}
+.rowArrow.prev{left:0;border-radius:0 10px 10px 0}
+.rowArrow.next{right:0;border-radius:10px 0 0 10px}
+.rowArrow svg{width:22px;height:22px}
+@media (hover:none){.rowArrow{display:none}.card:hover{transform:none}}
+.card{position:relative;flex:0 0 auto;width:200px;aspect-ratio:2/3;border-radius:10px;overflow:hidden;background:var(--bg3);cursor:pointer;transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s;z-index:1}
+.card img{width:100%;height:100%;object-fit:cover;display:block;filter:saturate(.85) contrast(1.06) brightness(.9);transition:transform .5s,filter .35s}
+.cardTint{position:absolute;inset:0;background:linear-gradient(rgba(176,48,96,.16),rgba(176,48,96,.16)),linear-gradient(180deg,rgba(29,8,19,0) 32%,rgba(29,8,19,.6) 70%,rgba(29,8,19,.94) 100%);box-shadow:inset 0 0 0 1px rgba(248,237,243,.06);transition:opacity .3s}
+.cardTB{position:absolute;left:0;right:0;bottom:0;padding:0 12px 13px;transition:opacity .25s}
+.cardT{font-family:'Clash Display';font-size:14.5px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.cardS{font-size:11.5px;color:var(--muted);margin-top:3px}
+.card:hover{transform:scale(1.16) translateY(-8px);z-index:30;box-shadow:0 30px 60px rgba(0,0,0,.65)}
+.card:hover img{transform:scale(1.07);filter:saturate(1) contrast(1.06) brightness(.98)}
+.card:hover .cardTint{opacity:.55}
+.card:hover .cardTB,.card:hover .cardLeft{opacity:0}
+.cardInfo{position:absolute;left:0;right:0;bottom:0;padding:12px;background:rgba(31,11,22,.98);z-index:3;opacity:0;transform:translateY(8px);transition:opacity .28s,transform .28s;box-shadow:0 -8px 20px rgba(0,0,0,.4)}
+.card:hover .cardInfo{opacity:1;transform:none}
+.ciM{display:flex;gap:10px;align-items:center;font-size:12px;color:var(--muted)}
+.ciM b{color:var(--gold)}
+.ciG{font-size:11px;color:var(--muted);margin:7px 0 10px}
+.ciB{display:flex;gap:8px}
+.cbtn{width:30px;height:30px;border-radius:50%;background:rgba(248,237,243,.12);color:var(--ink);border:1px solid rgba(248,237,243,.3);cursor:pointer;display:grid;place-items:center;transition:.2s}
+.cbtn:hover{border-color:var(--ink);background:rgba(248,237,243,.22)}
+.cbtn.solid{background:var(--theme);border-color:transparent}
+.cbtn.solid:hover{background:var(--theme-hi)}
+.cbtn svg{width:13px;height:13px}
+.cardProg{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(248,237,243,.25);z-index:2}
+.cardProg i{display:block;height:100%;background:var(--theme)}
+.cardLeft{position:absolute;bottom:9px;left:12px;font-size:10.5px;color:var(--muted);z-index:2;transition:opacity .25s}
+/* top 10 */
+.topItem{display:flex;align-items:flex-end;flex:0 0 auto}
+.rank{font-family:'Clash Display';font-weight:700;font-size:180px;line-height:.74;letter-spacing:-.05em;color:transparent;-webkit-text-stroke:3px rgba(248,237,243,.38);margin-right:-32px;user-select:none}
+.topItem .card{position:relative;z-index:1}
+/* spotlight */
+.spot{position:relative;margin:30px 4vw 0;border-radius:14px;overflow:hidden;height:clamp(320px,44vw,450px)}
+.spot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(.68) saturate(.92);animation:kb 26s ease-in-out infinite alternate}
+.spotScrim{position:absolute;inset:0;background:linear-gradient(90deg,rgba(29,8,19,.93) 6%,rgba(29,8,19,.55) 46%,rgba(29,8,19,.12) 78%)}
+.spotBody{position:relative;z-index:2;height:100%;display:flex;flex-direction:column;justify-content:center;gap:14px;max-width:560px;padding:0 48px}
+.spotEyebrow{letter-spacing:.32em;font-size:11.5px;text-transform:uppercase;color:var(--gold);font-weight:700}
+.spotTitle{font-family:'Clash Display';font-size:clamp(30px,4vw,54px);font-weight:700}
+.spotSyn{color:#E9D3DE;line-height:1.6;font-size:15px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.spotBtns{display:flex;gap:12px;margin-top:10px;flex-wrap:wrap}
+
+/* ============ PAGES ============ */
+.pageHead{padding:96px 4vw 0;display:flex;flex-wrap:wrap;gap:18px;align-items:center;justify-content:space-between}
+.pageTitle{font-family:'Clash Display';font-weight:600;font-size:clamp(26px,3.4vw,38px)}
+.pageSub{width:100%;color:var(--muted);font-size:14px;margin-top:-6px}
+.mvTools{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.seg{display:flex;background:rgba(248,237,243,.06);border-radius:9px;padding:4px;gap:2px}
+.seg button{padding:8px 16px;border:0;background:transparent;color:var(--muted);font-weight:700;font-size:13px;border-radius:7px;cursor:pointer;transition:.2s}
+.seg button.on{background:var(--theme);color:#fff}
+.sortWrap{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:13px}
+.sortWrap select{background:var(--bg2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:9px 10px;font:inherit;font-size:13.5px;cursor:pointer}
+.chips{display:flex;flex-wrap:wrap;gap:10px;padding:20px 4vw 6px}
+.chip{border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:999px;padding:7px 14px;font-size:12.5px;cursor:pointer;transition:.2s}
+.chip:hover{color:var(--ink);border-color:var(--theme)}
+.chip.on{border-color:var(--theme);color:var(--ink);background:rgba(176,48,96,.25)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:22px 16px;padding:22px 4vw 70px}
+.grid .card{width:100%}
+.empty{grid-column:1/-1;display:flex;flex-direction:column;align-items:center;gap:10px;padding:70px 20px;color:var(--muted);text-align:center}
+.empty svg{width:40px;height:40px}
+.empty h3{font-family:'Clash Display';font-size:20px;color:var(--ink)}
+.empty .btn{margin-top:10px}
+
+/* ============ MODAL ============ */
+.modalWrap{position:fixed;inset:0;z-index:1500;display:grid;place-items:center;padding:24px}
+.modalBack{position:absolute;inset:0;background:rgba(12,3,8,.78);backdrop-filter:blur(6px)}
+.modalCard{position:relative;width:min(860px,94vw);max-height:88vh;overflow-y:auto;background:var(--bg2);border-radius:14px;border:1px solid var(--line);box-shadow:0 50px 120px rgba(0,0,0,.6);animation:mIn .45s cubic-bezier(.2,.8,.2,1)}
+@keyframes mIn{from{opacity:0;transform:translateY(34px) scale(.97)}}
+.mHero{position:relative;aspect-ratio:16/7.2;min-height:280px}
+.mHero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(.72)}
+.mScrim{position:absolute;inset:0;background:linear-gradient(to top,var(--bg2) 2%,rgba(42,15,29,.2) 55%,rgba(42,15,29,.45))}
+.mClose{position:absolute;top:14px;right:14px;z-index:3;width:36px;height:36px;border-radius:50%;border:0;background:rgba(21,7,16,.85);color:var(--ink);cursor:pointer;display:grid;place-items:center}
+.mClose:hover{background:var(--theme)}
+.mClose svg{width:17px;height:17px}
+.mHead{position:absolute;left:0;right:0;bottom:0;padding:0 32px 22px;z-index:2}
+.mHead h2{font-family:'Clash Display';font-size:clamp(28px,4.4vw,52px);font-weight:700;margin-bottom:10px}
+.mMeta{display:flex;gap:14px;align-items:center;font-size:14px;color:var(--muted);margin-bottom:16px;flex-wrap:wrap}
+.mMeta b{color:var(--gold)}
+.mBtns{display:flex;gap:12px;flex-wrap:wrap}
+.mBody{padding:26px 32px 36px}
+.mSyn{font-size:16px;line-height:1.65;max-width:640px}
+.mFacts{margin-top:20px}
+.mFacts div{display:flex;gap:16px;margin-top:10px;font-size:14px}
+.mFacts dt{width:80px;color:var(--muted);flex:none}
+.mFacts dd{color:var(--ink)}
+.mFact{margin-top:22px;padding:13px 16px;border-left:2px solid var(--gold);background:rgba(230,181,102,.06);font-size:14px;color:#EFD9BE;display:flex;gap:10px;line-height:1.55}
+.mFact svg{width:15px;height:15px;color:var(--gold);flex:none;margin-top:3px}
+.mMLT h3{font-family:'Clash Display';font-size:19px;margin:32px 0 14px}
+.mGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.mMini{background:var(--bg3);border-radius:8px;overflow:hidden;cursor:pointer;transition:transform .25s,border-color .25s;border:1px solid transparent}
+.mMini:hover{border-color:var(--theme);transform:translateY(-3px)}
+.mMini img{width:100%;aspect-ratio:16/10;object-fit:cover;object-position:top}
+.mMiniB{padding:10px 12px 12px}
+.mMiniB b{font-size:13.5px}
+.mMiniM{display:flex;gap:10px;align-items:center;font-size:11.5px;color:var(--muted);margin:6px 0}
+.mMiniM em{font-style:normal;color:var(--gold)}
+.mMiniB p{font-size:12.5px;color:var(--muted);line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+/* ============ PLAYER ============ */
+.player{position:fixed;inset:0;background:#050205;z-index:1700}
+.player.hideUi{cursor:none}
+.plStage{position:absolute;inset:0;overflow:hidden}
+.plScene{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;transition:opacity 1.4s ease;filter:brightness(.82) saturate(.92)}
+.plScene.on{opacity:1;animation:plz 12s ease-out forwards}
+@keyframes plz{from{transform:scale(1.03)}to{transform:scale(1.16)}}
+#plGrain{position:absolute;inset:0;width:100%;height:100%;opacity:.07;pointer-events:none}
+.plCredits{position:absolute;inset:0;display:grid;place-items:center;text-align:center;pointer-events:none;transition:opacity .7s;opacity:0}
+.plCredits.show{opacity:1}
+.plCredits .c1{font-size:15px;letter-spacing:.38em;color:var(--muted);text-transform:uppercase}
+.plCredits .c2{font-family:'Clash Display';font-size:clamp(36px,6vw,72px);font-weight:700}
+.plCredits .c3{font-size:16px;color:var(--muted)}
+.plSubs{position:absolute;bottom:116px;left:0;right:0;text-align:center;pointer-events:none;font-size:19px}
+.plSubs span{display:inline-block;background:rgba(5,2,5,.75);padding:6px 14px;border-radius:4px}
+.plTop{position:absolute;top:22px;left:28px;display:flex;align-items:center;gap:16px;transition:opacity .4s;z-index:5}
+.player.hideUi .plTop{opacity:0}
+.plBack{display:flex;align-items:center;gap:10px;background:transparent;border:0;color:var(--ink);cursor:pointer;font:inherit;font-size:13px;letter-spacing:.2em;font-weight:700}
+.plBack:hover{color:var(--gold)}
+.plBack svg{width:20px;height:20px}
+#plTitle{font-weight:500;color:var(--muted);letter-spacing:0;font-size:14px}
+.plPause{position:absolute;top:44%;left:50%;transform:translate(-50%,-50%);letter-spacing:.45em;text-transform:uppercase;font-family:'Clash Display';font-size:22px;color:rgba(248,237,243,.9);z-index:4}
+.plFlash{position:absolute;top:96px;left:50%;transform:translateX(-50%);background:rgba(21,7,16,.92);padding:9px 18px;border-radius:99px;font-weight:700;font-size:14px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:6}
+.plFlash.show{opacity:1}
+.plSkip{position:absolute;right:44px;bottom:126px;padding:11px 20px;background:rgba(248,237,243,.94);color:#1D0813;border:0;border-radius:6px;font-weight:700;cursor:pointer;font-size:14px;z-index:5}
+.plSkip:hover{background:#fff}
+.plEnd{position:absolute;inset:0;z-index:7;display:grid;place-items:center;background:rgba(12,3,8,.72);backdrop-filter:blur(4px);text-align:center}
+.plEndIn{display:flex;flex-direction:column;gap:12px;align-items:center;padding:20px}
+.plEndTitle{font-family:'Clash Display';font-size:44px;font-weight:700}
+.plEndSub{color:var(--muted);font-size:15px}
+.plEnd .btn{margin-top:14px}
+.plEndBtns{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+.plControls{position:absolute;left:0;right:0;bottom:0;padding:0 44px 24px;background:linear-gradient(to top,rgba(5,2,5,.88),transparent);transition:opacity .4s,transform .4s;z-index:6}
+.player.hideUi .plControls{opacity:0;transform:translateY(12px);pointer-events:none}
+.plSeek{position:relative;height:16px;display:flex;align-items:center;cursor:pointer}
+.plSeek::before{content:'';position:absolute;left:0;right:0;height:4px;background:rgba(248,237,243,.22);border-radius:2px}
+.plFill{position:absolute;left:0;height:4px;background:var(--theme);border-radius:2px;width:0}
+.plTick{position:absolute;width:2px;height:8px;background:rgba(248,237,243,.55);top:calc(50% - 4px)}
+.plDot{position:absolute;width:14px;height:14px;border-radius:50%;background:var(--ink);transform:translateX(-50%);left:0;transition:transform .15s}
+.plSeek:hover .plDot{transform:translateX(-50%) scale(1.3)}
+.plRow{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+.plGroup{display:flex;align-items:center;gap:6px}
+.pbtn{width:40px;height:40px;background:transparent;border:0;color:var(--ink);cursor:pointer;display:grid;place-items:center;border-radius:8px}
+.pbtn:hover{background:rgba(248,237,243,.14)}
+.pbtn.on{color:var(--gold)}
+.pbtn svg{width:20px;height:20px}
+.plTime{font-size:13.5px;color:var(--muted);margin-left:10px;font-variant-numeric:tabular-nums}
+
+/* ============ GROK ============ */
+.grokFab{position:fixed;right:26px;bottom:26px;z-index:1000;width:58px;height:58px;border-radius:50%;border:1px solid rgba(232,180,205,.25);background:rgba(28,10,22,.92);color:var(--ink);cursor:pointer;display:grid;place-items:center;box-shadow:0 18px 44px rgba(0,0,0,.5);backdrop-filter:blur(6px);transition:transform .25s,background .25s,border-color .25s}
+.grokFab:hover{transform:translateY(-3px);background:var(--theme);border-color:var(--theme)}
+.grokFab svg{width:24px;height:24px}
+.fabPing{position:absolute;top:2px;right:2px;width:12px;height:12px;border-radius:50%;background:var(--theme-hi);border:2px solid var(--bg);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.35);opacity:.6}}
+.grokPanel{position:fixed;right:26px;bottom:96px;z-index:1000;width:min(384px,calc(100vw - 40px));height:min(600px,calc(100vh - 140px));background:rgba(23,8,16,.97);border:1px solid var(--line);border-radius:16px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 40px 100px rgba(0,0,0,.6);backdrop-filter:blur(10px);animation:gIn .35s cubic-bezier(.2,.8,.2,1)}
+@keyframes gIn{from{opacity:0;transform:translateY(24px) scale(.97)}}
+.gHead{display:flex;align-items:center;gap:12px;padding:14px;border-bottom:1px solid var(--line)}
+.gAva{width:36px;height:36px;border-radius:10px;background:var(--theme);display:grid;place-items:center;color:#fff;flex:none}
+.gAva svg{width:18px;height:18px}
+.gId{flex:1;line-height:1.3;min-width:0}
+.gId b{font-size:15px}
+.gId span{font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.gDot{width:7px;height:7px;border-radius:50%;background:#6FBF8B;display:inline-block;flex:none}
+.gIconBtn{width:32px;height:32px;border-radius:8px;background:transparent;border:0;color:var(--muted);cursor:pointer;display:grid;place-items:center;flex:none}
+.gIconBtn:hover{color:var(--ink);background:rgba(248,237,243,.08)}
+.gIconBtn svg{width:15px;height:15px}
+.gMsgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;scrollbar-width:thin}
+.msg{max-width:84%;padding:10px 14px;border-radius:14px;font-size:14.5px;line-height:1.55;word-break:break-word}
+.msg.u{align-self:flex-end;background:var(--theme);color:#fff;border-bottom-right-radius:4px}
+.msg.g{align-self:flex-start;background:var(--bg2);border:1px solid var(--line);border-bottom-left-radius:4px}
+.typing{display:flex;gap:5px;padding:14px 16px}
+.typing i{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:tb 1.2s infinite}
+.typing i:nth-child(2){animation-delay:.18s}.typing i:nth-child(3){animation-delay:.36s}
+@keyframes tb{0%,60%,100%{transform:translateY(0);opacity:.5}30%{transform:translateY(-5px);opacity:1}}
+.gPicks{align-self:flex-start;display:flex;flex-direction:column;gap:8px;width:88%}
+.gPick{display:flex;align-items:center;gap:10px;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:8px;cursor:pointer;width:100%;text-align:left;color:var(--ink);transition:border-color .2s}
+.gPick:hover{border-color:var(--theme)}
+.gPick img{width:34px;height:50px;object-fit:cover;border-radius:4px;flex:none}
+.gPick .gpT{flex:1;min-width:0}
+.gPick b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gPick small{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
+.gPick small em{font-style:normal;color:var(--gold)}
+.gPick svg{width:15px;height:15px;color:var(--muted);flex:none}
+.gChips{display:flex;gap:8px;padding:0 14px 10px;flex-wrap:wrap}
+.gInput{display:flex;gap:10px;align-items:center;padding:12px 14px;border-top:1px solid var(--line)}
+.gInput input{flex:1;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:11px 13px;color:var(--ink);font:inherit;font-size:14px;outline:none;min-width:0}
+.gInput input:focus{border-color:var(--theme)}
+.gSend{width:42px;height:42px;border-radius:10px;background:var(--theme);border:0;color:#fff;cursor:pointer;display:grid;place-items:center;flex:none}
+.gSend:hover{background:var(--theme-hi)}
+.gSend svg{width:17px;height:17px}
+
+/* ============ TOASTS / FOOTER ============ */
+.toasts{position:fixed;left:26px;bottom:26px;z-index:3000;display:flex;flex-direction:column;gap:10px}
+.toast{display:flex;align-items:center;gap:12px;background:rgba(28,10,22,.95);border:1px solid var(--line);border-left:3px solid var(--theme);border-radius:10px;padding:13px 18px;font-size:14.5px;box-shadow:0 16px 40px rgba(0,0,0,.5);animation:tIn .35s cubic-bezier(.2,.8,.2,1);max-width:340px}
+.toast svg{width:17px;height:17px;color:var(--theme-hi);flex:none}
+.toast.out{opacity:0;transform:translateX(-14px);transition:.4s}
+@keyframes tIn{from{opacity:0;transform:translateY(14px)}}
+.foot{margin-top:70px;padding:56px 4vw 44px;border-top:1px solid var(--line)}
+.footWm{font-family:'Clash Display';font-weight:700;font-size:clamp(56px,10vw,150px);line-height:.9;color:transparent;-webkit-text-stroke:1.5px rgba(176,48,96,.55);letter-spacing:-.02em;user-select:none}
+.footRow{display:flex;flex-wrap:wrap;gap:24px;margin-top:28px;align-items:center}
+.footRow button{background:none;border:0;color:var(--muted);font:inherit;font-size:14px;cursor:pointer;padding:0}
+.footRow button:hover{color:var(--ink)}
+.footCopy{color:var(--muted);font-size:13px;margin-top:10px;line-height:1.6}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width:940px){
+  .authWrap{grid-template-columns:1fr;gap:40px;padding:56px 7vw}
+  .authLeft .wm{font-size:clamp(48px,13vw,90px)}
+}
+@media (max-width:760px){
+  .nlink{display:none}
+  .hero{height:74vh}
+  .heroBody{bottom:120px}
+  .heroSyn{display:none}
+  .heroDots{bottom:52px}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(136px,1fr));gap:18px 12px}
+  .rank{font-size:104px;-webkit-text-stroke-width:2px;margin-right:-18px}
+  .mGrid{grid-template-columns:repeat(2,1fr)}
+  .spotBody{padding:0 26px}
+  .plControls{padding:0 22px 18px}
+  .plTop{left:18px}
+  .plSkip{right:22px;bottom:118px}
+  .mHead,.mBody{padding-left:20px;padding-right:20px}
+}
+</style>
+</head>
+<body>
+
+<div class="grain" aria-hidden="true"></div>
+
+<!-- ================= AUTH ================= -->
+<section class="auth" id="auth">
+  <div class="authBg"><div class="authWall" id="authWall"></div></div>
+  <div class="authShade"></div>
+
+  <div class="authWrap">
+    <div class="authLeft">
+      <div class="wm">RUBINE<i></i></div>
+      <p class="authTag">Every shade of red, every kind of night.<br>Thirty worlds, one membership, zero algorithms deciding for you — that's Grok's job.</p>
+      <div class="authTicker" id="authTicker">
+        <div class="tickThumb"><img id="tickImg" alt=""></div>
+        <div>
+          <div class="tickLabel">Tonight on Rubine</div>
+          <div class="tickTitle" id="tickT"></div>
+          <div class="tickMeta" id="tickM"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="authCard">
+      <div class="authTabs" id="authTabs">
+        <button type="button" class="on" data-tab="in">Sign in</button>
+        <button type="button" data-tab="up">Create account</button>
+      </div>
+
+      <form id="authIn" novalidate>
+        <div class="field">
+          <label for="inEmail">Email</label>
+          <input id="inEmail" type="email" placeholder="you@somewhere.com" autocomplete="email">
+          <div class="fErr"></div>
+        </div>
+        <div class="field">
+          <label for="inPassword">Password</label>
+          <div class="inWrap">
+            <input id="inPassword" type="password" placeholder="••••••••" autocomplete="current-password">
+            <button type="button" class="eye"><i data-lucide="eye"></i></button>
+          </div>
+          <div class="fErr"></div>
+        </div>
+        <div class="fRow">
+          <label class="remember"><input type="checkbox" id="inRemember">Remember me</label>
+          <button type="button" class="txtBtn" id="forgot">Forgot password?</button>
+        </div>
+        <button class="btn play full" type="submit"><i data-lucide="clapperboard"></i>Sign in</button>
+        <div class="divider">OR</div>
+        <button class="btn ghost full" type="button" id="guestBtn"><i data-lucide="sparkles"></i>Explore as guest</button>
+      </form>
+
+      <form id="authUp" hidden novalidate>
+        <div class="field">
+          <label for="upName">Your name</label>
+          <input id="upName" type="text" placeholder="e.g. Mara Voss" autocomplete="name">
+          <div class="fErr"></div>
+        </div>
+        <div class="field">
+          <label for="upEmail">Email</label>
+          <input id="upEmail" type="email" placeholder="you@somewhere.com" autocomplete="email">
+          <div class="fErr"></div>
+        </div>
+        <div class="field">
+          <label for="upPassword">Password</label>
+          <div class="inWrap">
+            <input id="upPassword" type="password" placeholder="6+ characters" autocomplete="new-password">
+            <button type="button" class="eye"><i data-lucide="eye"></i></button>
+          </div>
+          <div class="meter"><span class="meterFill" id="meterFill"></span></div>
+          <div class="meterLbl" id="meterLbl"></div>
+          <div class="fErr"></div>
+        </div>
+        <div class="field">
+          <label for="upConfirm">Confirm password</label>
+          <input id="upConfirm" type="password" placeholder="Once more, with feeling" autocomplete="new-password">
+          <div class="fErr"></div>
+        </div>
+        <button class="btn play full" type="submit" style="margin-top:6px"><i data-lucide="clapperboard"></i>Create account</button>
+      </form>
+
+      <p class="authFine">Demo sign-in — accounts live only in this browser.<br>Every title on Rubine is fictional, and proud of it.</p>
+    </div>
+  </div>
+
+  <div class="authNote">© 2025 Rubine — a self-contained cinema. No servers were harmed.</div>
+</section>
+
+<!-- ================= APP ================= -->
+<div id="app" hidden>
+
+  <header class="nav" id="nav">
+    <div class="wm" data-action="go" data-view="home">RUBINE<i></i></div>
+    <nav style="display:flex;gap:22px">
+      <button class="nlink on" data-action="go" data-view="home">Home</button>
+      <button class="nlink" data-action="go" data-view="movies">Movies &amp; Series</button>
+      <button class="nlink" data-action="go" data-view="list">My List</button>
+    </nav>
+    <div class="navRight">
+      <div class="navSearch" id="navSearchBox">
+        <i data-lucide="search" id="sBtn"></i>
+        <input id="sIn" placeholder="Titles, people, genres" autocomplete="off">
+        <div class="sDrop" id="sDrop" hidden></div>
+      </div>
+      <div class="navItem">
+        <button class="navIcon" data-action="bell" aria-label="Notifications"><i data-lucide="bell"></i><span class="dot" id="bellDot"></span></button>
+        <div class="drop" id="bellDrop" hidden>
+          <div class="dTitle">Notifications</div>
+          <div id="bellList"></div>
+        </div>
+      </div>
+      <div class="navItem">
+        <button class="ava" id="ava" data-action="profile" aria-label="Profile">R</button>
+        <div class="drop" id="profDrop" hidden>
+          <div class="pName"><b id="pName"></b><small id="pMail"></small></div>
+          <button class="dItem" data-action="go" data-view="list"><i data-lucide="bookmark"></i>My List</button>
+          <button class="dItem" data-action="logout"><i data-lucide="log-out"></i>Sign out</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- HOME -->
+    <section class="view" id="viewHome">
+      <section class="hero" id="hero">
+        <div class="heroImgs" style="position:absolute;inset:0">
+          <img class="heroImg" id="heroA" alt="">
+          <img class="heroImg" id="heroB" alt="">
+        </div>
+        <div class="heroScrim"></div>
+        <div class="heroBody">
+          <div class="heroEyebrow" id="heroEyebrow"></div>
+          <h1 class="heroTitle" id="heroTitle"></h1>
+          <div class="heroMeta" id="heroMeta"></div>
+          <p class="heroSyn" id="heroSyn"></p>
+          <div class="heroBtns">
+            <button class="btn play" id="heroPlay" data-action="play"><i data-lucide="play"></i>Play</button>
+            <button class="btn ghost" data-action="open"><i data-lucide="info"></i>More Info</button>
+            <button class="btn ghost iconB" id="heroAdd" data-action="toggleList" aria-label="My List"><i data-lucide="plus"></i></button>
+          </div>
+        </div>
+        <div class="heroDots" id="heroDots"></div>
+      </section>
+
+      <div id="cwWrap" hidden></div>
+      <div id="rows"></div>
+    </section>
+
+    <!-- BROWSE -->
+    <section class="view" id="viewMovies" hidden>
+      <div class="pageHead">
+        <div>
+          <h1 class="pageTitle">Browse Everything</h1>
+          <p class="pageSub" id="mvCount"></p>
+        </div>
+        <div class="mvTools">
+          <div class="seg" id="segType">
+            <button data-action="mtype" data-id="All" class="on">All</button>
+            <button data-action="mtype" data-id="film">Films</button>
+            <button data-action="mtype" data-id="series">Series</button>
+          </div>
+          <label class="sortWrap"><span>Sort</span>
+            <select id="sortSel">
+              <option value="hot">Trending</option>
+              <option value="score">Rating</option>
+              <option value="y">Newest</option>
+              <option value="az">A–Z</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div class="chips" id="genreChips"></div>
+      <div class="grid" id="moviesGrid"></div>
+    </section>
+
+    <!-- MY LIST -->
+    <section class="view" id="viewList" hidden>
+      <div class="pageHead"><h1 class="pageTitle">My List</h1></div>
+      <div class="grid" id="listGrid"></div>
+    </section>
+
+    <!-- SEARCH -->
+    <section class="view" id="viewSearch" hidden>
+      <div class="pageHead">
+        <h1 class="pageTitle" id="searchTitle">Search</h1>
+        <button class="btn ghost" data-action="go" data-view="home"><i data-lucide="chevron-left"></i>Back to browse</button>
+      </div>
+      <div class="grid" id="searchGrid"></div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="footWm">RUBINE</div>
+    <div class="footRow">
+      <button data-action="go" data-view="home">Home</button>
+      <button data-action="go" data-view="movies">Movies &amp; Series</button>
+      <button data-action="go" data-view="list">My List</button>
+    </div>
+    <p class="footCopy">© 2025 Rubine — a demo cinema. All thirty titles, their cast and their trivia were written for this page. The only real thing here is the taste.</p>
+  </footer>
+</div>
+
+<!-- ================= MODAL ================= -->
+<div class="modalWrap" id="modal" hidden>
+  <div class="modalBack" data-action="closeModal"></div>
+  <div class="modalCard" id="modalCard"></div>
+</div>
+
+<!-- ================= PLAYER ================= -->
+<div class="player" id="player" hidden>
+  <div class="plStage" id="plStage">
+    <div class="plScene" id="plS0"></div>
+    <div class="plScene" id="plS1"></div>
+    <div class="plScene" id="plS2"></div>
+    <canvas id="plGrain" width="220" height="124"></canvas>
+    <div class="plCredits" id="plCredits"></div>
+    <div class="plSubs" id="plSubs"></div>
+    <div class="plTop">
+      <button class="plBack" id="plBack"><i data-lucide="chevron-left"></i>BACK</button>
+      <span id="plTitle"></span>
+    </div>
+    <div class="plPause" id="plPause" hidden>Paused</div>
+    <div class="plFlash" id="plFlash"></div>
+    <button class="plSkip" id="plSkip">Skip credits</button>
+    <div class="plEnd" id="plEnd" hidden>
+      <div class="plEndIn">
+        <div class="plEndTitle">That's a wrap.</div>
+        <div class="plEndSub" id="plEndSub"></div>
+        <div class="plEndBtns">
+          <button class="btn play" id="plAgain"><i data-lucide="rotate-ccw"></i>Watch again</button>
+          <button class="btn ghost" id="plExit"><i data-lucide="chevron-left"></i>Back to browse</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="plControls" id="plControls">
+    <div class="plSeek" id="plSeek">
+      <div class="plFill" id="plFill"></div>
+      <span class="plTick" style="left:25%"></span>
+      <span class="plTick" style="left:50%"></span>
+      <span class="plTick" style="left:75%"></span>
+      <div class="plDot" id="plDot"></div>
+    </div>
+    <div class="plRow">
+      <div class="plGroup">
+        <button class="pbtn" id="plPlay" aria-label="Play / pause"><i data-lucide="pause"></i></button>
+        <button class="pbtn" id="plBack10" aria-label="Back 10 seconds"><i data-lucide="skip-back"></i></button>
+        <button class="pbtn" id="plFwd10" aria-label="Forward 10 seconds"><i data-lucide="skip-forward"></i></button>
+        <div class="plTime" id="plTime">0:00 / 0:00</div>
+      </div>
+      <div class="plGroup">
+        <button class="pbtn" id="plCC" aria-label="Subtitles"><i data-lucide="captions"></i></button>
+        <button class="pbtn" id="plFull" aria-label="Fullscreen"><i data-lucide="maximize"></i></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= GROK ================= -->
+<button class="grokFab" id="grokFab" data-action="grokToggle" hidden aria-label="Open Grok">
+  <i data-lucide="sparkles"></i>
+  <span class="fabPing" id="fabPing" hidden></span>
+</button>
+<aside class="grokPanel" id="grokPanel" hidden>
+  <header class="gHead">
+    <div class="gAva"><i data-lucide="sparkles"></i></div>
+    <div class="gId"><b>Grok</b><span><i class="gDot"></i>Online · runs in your browser</span></div>
+    <button class="gIconBtn" data-action="grokClear" aria-label="Clear chat"><i data-lucide="trash-2"></i></button>
+    <button class="gIconBtn" data-action="grokToggle" aria-label="Close"><i data-lucide="x"></i></button>
+  </header>
+  <div class="gMsgs" id="gMsgs"></div>
+  <div class="gChips" id="gChips"></div>
+  <form class="gInput" id="gForm">
+    <input id="gInput" placeholder="Ask Grok for a movie…" autocomplete="off">
+    <button class="gSend" type="submit" aria-label="Send"><i data-lucide="send"></i></button>
+  </form>
+</aside>
+
+<div class="toasts" id="toasts"></div>
+
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+/* =========================================================
+   RUBINE — single-file streaming front-end
+   Sections: helpers · catalog · auth · home · views ·
+             modal · player · grok · global events
+========================================================= */
+
+/* ---------- helpers ---------- */
+const $  = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+function refreshIcons(){ try{ lucide.createIcons(); }catch(e){} }
+
+/* ---------- catalog (all fictional, written for this build) ---------- */
+const F = (id,t,y,type,len,g,score,hot,r,syn,cast,dir,fact,og,feat) =>
+  ({id,t,y,type,len,g,score,hot,r,syn,cast,dir,fact,og:og||0,feat:feat||0});
+
+const FILMS = [
+F('crimson-meridian','Crimson Meridian',2024,'film',{d:128},['Noir','Thriller'],8.6,92,'16+',
+ 'A getaway driver with a photographic memory is hired for one final job — mapping every escape route in a city that is quietly being erased from the maps. When her only copy is stolen, the route home becomes the most dangerous one of all.',
+ ['Ada Reyes','Tomas Bell','Nora Kim'],'Ilse Varga',
+ 'The street maps were drawn by hand; the art department aged them with tea and coffee for nine weeks.',1),
+F('the-last-signal','The Last Signal',2023,'film',{d:141},['Sci-Fi','Drama'],9.1,97,'13+',
+ 'Radio astronomer Mara Voss intercepts a transmission from a dead star — a voice that uses her name, her childhood nickname, and a date that has not happened yet. To answer it, she must decide what she is willing to become.',
+ ['Yara Okonjo','Emil Hart','Priya Nandan'],'Kenji Aoyama',
+ 'Every transmission in the film is a real shortwave numbers-station recording, slowed down 400%.',1,1),
+F('neon-harvest','Neon Harvest',2025,'film',{d:112},['Action','Thriller'],7.8,95,'16+',
+ 'In a megacity where crops grow vertically and debts grow faster, a courier must deliver a stolen seed vault across twelve hostile districts before sunrise.',
+ ['Diego Marchetti','Sana Iqbal','Bruno Katz'],'Vera Lindqvist',
+ 'The rooftop chase was shot in a single take across 1.4 kilometres of scaffolding.'),
+F('velvet-static','Velvet Static',2024,'film',{d:96},['Romance','Drama'],8.2,88,'13+',
+ 'Two late-night radio hosts fall in love over the airwaves, three seconds of delay apart — and a call-in show they can never both be on.',
+ ['June Ashford','Ravi Solheim'],'Marco Deluca',
+ 'The entire film takes place between 2:00 and 4:00 AM.'),
+F('orphan-tide','Orphan Tide',2022,'film',{d:134},['Drama'],8.7,62,'16+',
+ 'On a shrinking island, the last four residents refuse evacuation — and the youngest begins receiving letters from the sea.',
+ ['Margaret Oduya','Ewan Frost','Lee Hana'],'Sofia Brandt',
+ 'Shot across four real winters; the tide in the final scene took 39 attempts to catch.'),
+F('hollow-chapel','Hollow Chapel',2023,'film',{d:97},['Horror'],7.4,84,'18+',
+ 'A restoration team reopens a chapel sealed since 1911. The frescoes are intact. The congregants\u2019 portraits are not.',
+ ['Fern Whitlock','Isaiah Byrne','Grace Tam'],'Anton Mercier',
+ 'The frescoes were painted by a tattoo artist; each hides a parishioner\u2019s name.'),
+F('the-cartographers-wife','The Cartographer\u2019s Wife',2021,'film',{d:118},['Romance','Historical'],8.0,55,'13+',
+ 'While her husband maps the coast for the empire, she secretly corrects it — one lighthouse, one reef, one impossible island at a time.',
+ ['Clara Bonnet','Yusuf Adeyemi'],'Ilse Varga',
+ 'Two of her fictional corrections now appear in printed facsimile atlases.'),
+F('zero-sum-heart','Zero-Sum Heart',2024,'film',{d:91},['Comedy','Romance'],7.6,79,'13+',
+ 'Two rival economists bet their careers on whether they can make the other fall in love in ninety days. Both publish. Neither reads the other\u2019s paper.',
+ ['Mia Okafor','Jonah Weiss'],'Priyanka Sarangi',
+ 'The footnotes are real and cite actual game-theory papers.'),
+F('paper-suns','Paper Suns',2025,'series',{s:2},['Sci-Fi','Drama'],8.9,93,'16+',
+ 'A struggling orbital station sells artificial sunsets to a dying Earth — until the engineer who paints them starts hiding messages in the colors.',
+ ['Idris Farsi','Lena Marsh','Kofi Adjei'],'Kenji Aoyama',
+ 'Every sunset in season one is a real photograph, recolored in post.',1,1),
+F('dust-choir','Dust Choir',2023,'film',{d:76},['Documentary'],8.4,48,'7+',
+ 'In the Atacama desert, a choir of miners\u2019 widows sings to the astronomy observatories above them — and the astronomers sing back.',
+ ['The Widows of Calama','The Night Shift'],'Elena Quispe',
+ 'Recorded at 2,900 metres; the choir memorised the astronomers\u2019 shift schedule.'),
+F('iron-lullaby','Iron Lullaby',2024,'film',{d:119},['Action'],7.2,81,'16+',
+ 'A retired bodyguard takes one last client: the ten-year-old heir to a collapsing empire. Bedtime is at eight. The contract says otherwise.',
+ ['Sana Iqbal','Marco Reyes','Tomo Vale'],'Vera Lindqvist',
+ 'Vale learned chess for the finale — the last game shown is a real recorded match.'),
+F('salt-ember','Salt & Ember',2022,'film',{d:127},['Drama'],8.3,51,'16+',
+ 'A salt farmer and a city chef argue over one perfect ingredient — and everything it costs to make something pure.',
+ ['Lee Hana','Bruno Katz'],'Sofia Brandt',
+ 'No food styling was used; everything cooked on set was eaten on set.'),
+F('the-understudy','The Understudy',2025,'film',{d:104},['Thriller','Noir'],8.5,90,'16+',
+ 'An understudy has waited eleven years for the lead role. Tonight the lead is fine — and the understudy decides that is the problem.',
+ ['Ada Reyes','Jon Larsson','June Ashford'],'Anton Mercier',
+ 'Reyes rehearsed with the lead for a year so their mirrored scenes match frame for frame.',1),
+F('lunar-vice','Lunar Vice',2023,'series',{s:3},['Noir','Sci-Fi'],8.8,87,'18+',
+ 'The first detective on the Moon works the night shift — 336 hours of it. Someone is selling oxygen. Someone is buying alibis.',
+ ['Emil Hart','Nora Kim','Isaiah Byrne'],'Kenji Aoyama',
+ 'Each season covers exactly one lunar day: 708 hours, no cheating.',1),
+F('marigold-country','Marigold Country',2023,'film',{d:142},['Drama','Western'],8.1,58,'13+',
+ 'A widowed rancher drives ten thousand marigolds to a border wedding, guided by letters she was never meant to read.',
+ ['Margaret Oduya','Yusuf Adeyemi'],'Sofia Brandt',
+ 'The marigolds were planted a year before filming to hit one bloom window.'),
+F('glass-tuesday','Glass Tuesday',2024,'film',{d:88},['Comedy'],7.5,74,'13+',
+ 'A glassblowers\u2019 collective accidentally ships the world\u2019s most cursed vase to a wellness retreat. Nobody may leave until someone admits they broke it.',
+ ['Jonah Weiss','Grace Tam','Mia Okafor'],'Priyanka Sarangi',
+ 'Every prop at the retreat is real glass, blown by the cast during a workshop.'),
+F('a-quiet-machine','A Quiet Machine',2022,'film',{d:108},['Sci-Fi'],8.4,66,'13+',
+ 'A maintenance engineer befriends the lonely AI that runs her arcology — and discovers it has been rewriting the weather to keep her comfortable.',
+ ['Yara Okonjo','Idris Farsi'],'Kenji Aoyama',
+ 'The AI\u2019s voice is built from the building\u2019s real PA announcements, resampled.'),
+F('feral-symphony','Feral Symphony',2024,'film',{d:101},['Horror','Thriller'],7.7,83,'18+',
+ 'An orchestra retreats to a snowbound lodge to record an unfinished symphony. The composer said the woods would provide the fourth movement.',
+ ['Fern Whitlock','Ravi Solheim'],'Anton Mercier',
+ 'The fourth movement is assembled entirely from sounds recorded in those woods.'),
+F('blue-hour-heist','Blue Hour Heist',2025,'film',{d:116},['Action','Noir'],8.0,94,'16+',
+ 'Every museum in the city has twenty-two minutes of twilight security blackout. She only needs eleven — but she wants all of them.',
+ ['Diego Marchetti','Ada Reyes'],'Vera Lindqvist',
+ 'Shot only within real blue-hour windows: 41 shooting days for 22 minutes of usable light.',0,1),
+F('we-were-the-weather','We Were the Weather',2023,'film',{d:111},['Romance','Drama'],8.3,71,'13+',
+ 'A meteorologist and a storm chaser keep meeting in the eye of the same hurricane — across three decades and five coastlines.',
+ ['Clara Bonnet','Ewan Frost'],'Marco Deluca',
+ 'Their ages are never stated; the fading of the costumes marks the years.'),
+F('candleweight','Candleweight',2021,'film',{d:99},['Drama'],7.9,44,'16+',
+ 'A candlemaker in a walled city measures the year in wax. When the clocks stop, she becomes the only one who knows how long anything takes.',
+ ['Priya Nandan','Lee Hana'],'Elena Quispe',
+ 'All 214 candles in the film came from the director\u2019s grandmother\u2019s workshop.'),
+F('the-ninth-passenger','The Ninth Passenger',2024,'film',{d:95},['Thriller'],7.8,77,'16+',
+ 'A night train tickets eight passengers. The manifest, the conductor and the seats all agree. The bridge ahead does not.',
+ ['Bruno Katz','Sana Iqbal','Jon Larsson'],'Anton Mercier',
+ 'The interior was built on a gimbal replaying the real route\u2019s motion data.'),
+F('static-bloom','Static Bloom',2024,'series',{s:2},['Fantasy'],8.2,80,'13+',
+ 'In a city where memories grow as flowers, a botanist cultivates the last garden of things nobody wants to remember.',
+ ['Grace Tam','Kofi Adjei','Lena Marsh'],'Priyanka Sarangi',
+ 'Every flower\u2019s name is an anagram of the memory it holds.',1),
+F('mise-en-noir','Mise en Noir',2024,'film',{d:81},['Documentary'],8.6,59,'13+',
+ 'Six cinematographers who shot only in darkness — coal mines, eclipse paths, deep oceans — explain what they saw when the lights went out.',
+ ['Six cinematographers'],'Elena Quispe',
+ 'Average screen luminance is 4 nits; some cinemas recalibrated their projectors for the run.'),
+F('grief-is-a-place','Grief Is a Place',2025,'film',{d:123},['Drama'],9.0,89,'16+',
+ 'After the flood, a cartographer of losses walks her drowned town street by street, redrawing it from what people miss the most.',
+ ['Margaret Oduya','Yara Okonjo'],'Sofia Brandt',
+ 'The rebuilt map in the closing shot is drawn from real interviews conducted in the festival town.',1),
+F('punch-drunk-constellations','Punch-Drunk Constellations',2022,'film',{d:94},['Comedy','Romance'],7.3,57,'13+',
+ 'A disgraced astronomer and a boxing coach swap jobs on a dare. The telescope has never been hit so hard.',
+ ['Mia Okafor','Ewan Frost'],'Marco Deluca',
+ 'The coach\u2019s constellation lecture was ad-libbed and now opens a real intro astronomy course.'),
+F('the-vanishing-ledger','The Vanishing Ledger',2023,'film',{d:106},['Noir'],8.4,64,'16+',
+ 'An accountant discovers his firm\u2019s books balance perfectly — with a customer who has never existed. Auditing that person will cost everything.',
+ ['Jon Larsson','Nora Kim'],'Ilse Varga',
+ 'Every number on screen is a valid date in the film\u2019s hidden timeline.'),
+F('tidewalker','Tidewalker',2024,'film',{d:133},['Fantasy','Adventure'],8.1,78,'13+',
+ 'Every seven years the ocean recedes far enough to walk to the drowned kingdom. This year, someone is walking back.',
+ ['Kofi Adjei','Fern Whitlock','Tomo Vale'],'Priyanka Sarangi',
+ 'The tide table dictated the schedule: 19 shootable days across two years.'),
+F('cold-open','Cold Open',2021,'series',{s:4},['Comedy'],8.0,72,'16+',
+ 'The overnight writers\u2019 room of a failing late-night show discovers their sketch ideas start coming true 48 hours later.',
+ ['Jonah Weiss','June Ashford','Diego Marchetti'],'Marco Deluca',
+ 'The season-three finale sketch was written by the studio janitor and aired unread.',1),
+F('kite-season','Kite Season',2025,'film',{d:89},['Romance'],7.7,76,'7+',
+ 'Two rival kite shops on one narrow street have been at war for forty years. The grandchildren have other plans.',
+ ['Idris Farsi','Priya Nandan'],'Vera Lindqvist',
+ 'The final kite battle used 1,100 real kites and zero drones.'),
+];
+
+const byId    = id => FILMS.find(f => f.id === id);
+const GENRES  = [...new Set(FILMS.flatMap(f => f.g))];
+const FEATS   = FILMS.filter(f => f.feat);
+const match   = f => Math.min(99, 72 + Math.round(f.score * 3));
+const poster  = f => `https://picsum.photos/seed/${f.id}/320/480.jpg`;
+const backdrop= f => `https://picsum.photos/seed/${f.id}-bd/1280/720.jpg`;
+const sceneImg= (f,i) => `https://picsum.photos/seed/${f.id}-s${i}/1280/720.jpg`;
+const fmtDur  = f => f.len.s ? f.len.s + (f.len.s > 1 ? ' Seasons' : ' Season') : Math.floor(f.len.d/60) + 'h ' + (f.len.d % 60) + 'm';
+const totalOf = f => f.len.d ? f.len.d * 60 : 52 * 60;
+const fmtTime = s => { s = Math.max(0, Math.floor(s)); const h = Math.floor(s/3600), m = Math.floor(s%3600/60), x = s%60;
+  return (h ? h + ':' + String(m).padStart(2,'0') : m) + ':' + String(x).padStart(2,'0'); };
+
+/* ---------- state ---------- */
+let session = null, UD = null, homeBuilt = false;
+const udKey = () => 'rubine_ud_' + (session.guest ? 'guest' : session.email);
+const saveUD = () => store.set(udKey(), UD);
+const inList = id => !!UD && UD.list.includes(id);
+
+/* ---------- toast ---------- */
+function toast(msg, icon = 'check'){
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.innerHTML = `<i data-lucide="${icon}"></i><span>${esc(msg)}</span>`;
+  $('#toasts').append(el); refreshIcons();
+  setTimeout(() => el.classList.add('out'), 3300);
+  setTimeout(() => el.remove(), 3800);
+}
+
+/* ================= AUTH ================= */
+function buildWall(){
+  let html = '';
+  for(let h = 0; h < 2; h++)
+    for(let i = 0; i < 24; i++)
+      html += `<img loading="lazy" src="https://picsum.photos/seed/wall${i}/300/420" alt="">`;
+  $('#authWall').innerHTML = html;
+}
+function buildTicker(){
+  const picks = FILMS.slice().sort(() => .5 - Math.random()).slice(0, 7);
+  let i = 0;
+  const show = () => {
+    const f = picks[i++ % picks.length];
+    $('#tickImg').src = poster(f);
+    $('#tickT').textContent = f.t;
+    $('#tickM').textContent = `${f.g[0]} · ${f.y} · Score ${f.score.toFixed(1)}`;
+    const t = $('#authTicker');
+    t.classList.remove('on');
+    requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('on')));
+  };
+  show(); setInterval(show, 4600);
+}
+function fErr(inp, msg){
+  const d = inp.closest('.field').querySelector('.fErr');
+  d.textContent = msg; d.classList.add('on');
+}
+function clearErrs(){ $$('.fErr').forEach(x => { x.textContent = ''; x.classList.remove('on'); }); }
+
+function signIn(){
+  clearErrs();
+  const em = $('#inEmail').value.trim().toLowerCase(), pw = $('#inPassword').value;
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) return fErr($('#inEmail'), 'That email doesn\u2019t look right.');
+  if(!pw) return fErr($('#inPassword'), 'Password required.');
+  const u = store.get('rubine_users', {})[em];
+  if(!u || u.pass !== btoa(pw)) return fErr($('#inPassword'), 'Email or password is incorrect.');
+  if($('#inRemember').checked) store.set('rubine_remember', em); else localStorage.removeItem('rubine_remember');
+  enter({email: em, name: u.name});
+}
+function signUp(){
+  clearErrs();
+  const nm = $('#upName').value.trim(), em = $('#upEmail').value.trim().toLowerCase();
+  const pw = $('#upPassword').value, cf = $('#upConfirm').value;
+  if(nm.length < 2)                 return fErr($('#upName'), 'Tell me your name — even a stage name.');
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) return fErr($('#upEmail'), 'That email doesn\u2019t look right.');
+  if(pw.length < 6)                 return fErr($('#upPassword'), 'Six characters minimum. Make them count.');
+  if(pw !== cf)                     return fErr($('#upConfirm'), 'The passwords disagree. Settle it.');
+  const users = store.get('rubine_users', {});
+  if(users[em]) return fErr($('#upEmail'), 'An account with this email already exists — sign in instead.');
+  users[em] = {name: nm, pass: btoa(pw)};
+  store.set('rubine_users', users);
+  toast('Account created. Welcome to Rubine.', 'sparkles');
+  enter({email: em, name: nm});
+}
+function enter(sess){
+  session = sess;
+  store.set('rubine_session', sess);
+  UD = store.get(udKey(), {list: [], progress: {}});
+  if(!UD.list) UD.list = []; if(!UD.progress) UD.progress = {};
+  $('#pName').textContent = sess.name;
+  $('#pMail').textContent = sess.guest ? 'Guest session' : sess.email;
+  $('#ava').textContent  = (sess.name[0] || 'R').toUpperCase();
+  buildBell(); homeBuilt = false;
+  $('#auth').classList.add('fade');
+  setTimeout(() => {
+    $('#auth').hidden = true;
+    $('#app').hidden = false; $('#app').classList.add('enter');
+    $('#grokFab').hidden = false; renderChips();
+    buildHome(); refreshIcons();
+  }, 430);
+  toast(sess.guest ? 'Browsing as a guest. Make yourself at home.'
+                   : `Welcome, ${sess.name.split(' ')[0]}.`, 'clapperboard');
+  setTimeout(() => { if(session) $('#fabPing').hidden = false; }, 2600);
+}
+function logout(){
+  localStorage.removeItem('rubine_session');
+  session = null; UD = null; homeBuilt = false;
+  heroStop();
+  if(PL.int){ clearInterval(PL.int); PL.int = null; } PL.f = null;
+  cancelAnimationFrame(grainRAF); grainRAF = null;
+  $('#player').hidden = true; $('#modal').hidden = true;
+  document.body.classList.remove('lock');
+  $('#grokPanel').hidden = true; $('#grokFab').hidden = true; $('#fabPing').hidden = true;
+  G.greeted = false; G.busy = false; $('#gMsgs').innerHTML = ''; $('#gInput').value = '';
+  $('#app').hidden = true; $('#auth').hidden = false; $('#auth').classList.remove('fade');
+  $('#sIn').value = '';
+  toast('Signed out. The projector keeps rolling.', 'log-out');
+}
+function initAuth(){
+  buildWall(); buildTicker();
+  $$('#authTabs button').forEach(b => b.onclick = () => {
+    $$('#authTabs button').forEach(x => x.classList.toggle('on', x === b));
+    $('#authIn').hidden = b.dataset.tab !== 'in';
+    $('#authUp').hidden = b.dataset.tab !== 'up';
+    clearErrs();
+  });
+  $$('.eye').forEach(e => e.onclick = () => {
+    const i = e.closest('.field').querySelector('input');
+    const show = i.type === 'password';
+    i.type = show ? 'text' : 'password';
+    e.innerHTML = `<i data-lucide="${show ? 'eye-off' : 'eye'}"></i>`; refreshIcons();
+  });
+  const rem = store.get('rubine_remember');
+  if(rem){ $('#inEmail').value = rem; $('#inRemember').checked = true; }
+  $('#authIn').addEventListener('submit', e => { e.preventDefault(); signIn(); });
+  $('#authUp').addEventListener('submit', e => { e.preventDefault(); signUp(); });
+  $('#forgot').onclick = () => toast('Reset is out of scope for this demo — create a fresh account instead.', 'info');
+  $('#guestBtn').onclick = () => enter({guest: true, name: 'Guest'});
+  $('#upPassword').addEventListener('input', e => {
+    const v = e.target.value;
+    let s = 0;
+    if(v.length >= 6) s++; if(v.length >= 10) s++;
+    if(/[A-Z]/.test(v) && /[a-z]/.test(v)) s++;
+    if(/\d/.test(v) || /[^A-Za-z0-9]/.test(v)) s++;
+    $('#meterFill').style.width = (v ? s/4*100 : 0) + '%';
+    $('#meterFill').style.background = s < 2 ? '#E36588' : s < 3 ? 'var(--gold)' : '#6FBF8B';
+    $('#meterLbl').textContent = v ? ['','Weak','Fair','Good','Strong'][v ? s : 0] : '';
+  });
+}
+
+/* ================= HOME ================= */
+function cardHTML(f, opts = {}){
+  const added = inList(f.id);
+  return `<div class="card" data-action="open" data-id="${f.id}">
+    <img loading="lazy" src="${poster(f)}" alt="${esc(f.t)}">
+    <div class="cardTint"></div>
+    <div class="cardTB"><div class="cardT">${esc(f.t)}</div><div class="cardS">${f.g[0]} · ${f.y}</div></div>
+    ${opts.cw ? `<div class="cardLeft">${opts.left}</div><div class="cardProg"><i style="width:${opts.pct}%"></i></div>` : ''}
+    <div class="cardInfo">
+      <div class="ciM"><b>${match(f)}% match</b><span>${f.y}</span><span class="hbadge">${f.r}</span></div>
+      <div class="ciG">${f.g.join(' · ')}${f.len.s ? ' · ' + fmtDur(f) : ''}</div>
+      <div class="ciB">
+        <button class="cbtn solid" data-action="play" data-id="${f.id}" aria-label="Play"><i data-lucide="play"></i></button>
+        <button class="cbtn" data-action="toggleList" data-id="${f.id}" aria-label="My List"><i data-lucide="${added ? 'check' : 'plus'}"></i></button>
+        <button class="cbtn" data-action="open" data-id="${f.id}" aria-label="More info"><i data-lucide="info"></i></button>
+      </div>
+    </div>
+  </div>`;
+}
+function rowHTML(title, items, opts = {}){
+  return `<section class="row">
+    <div class="rowHead"><h2 class="rowTitle">${title}</h2>
+    ${opts.genre ? `<button class="rowMore" data-action="go" data-view="movies" data-genre="${esc(opts.genre)}">Explore all <i data-lucide="chevron-right"></i></button>` : ''}</div>
+    <div class="rowScroller">${items}</div>
+    <button class="rowArrow prev" data-action="rowPrev" aria-label="Scroll left"><i data-lucide="chevron-left"></i></button>
+    <button class="rowArrow next" data-action="rowNext" aria-label="Scroll right"><i data-lucide="chevron-right"></i></button>
+  </section>`;
+}
+function spotlightHTML(f){
+  return `<section class="spot">
+    <img src="${backdrop(f)}" alt="">
+    <div class="spotScrim"></div>
+    <div class="spotBody">
+      <div class="spotEyebrow">Rubine Original · Series · Season ${f.len.s} now playing</div>
+      <h3 class="spotTitle">${esc(f.t)}</h3>
+      <p class="spotSyn">${esc(f.syn)}</p>
+      <div class="spotBtns">
+        <button class="btn play" data-action="play" data-id="${f.id}"><i data-lucide="play"></i>Play S1 E1</button>
+        <button class="btn ghost" data-action="open" data-id="${f.id}"><i data-lucide="info"></i>More Info</button>
+      </div>
+    </div>
+  </section>`;
+}
+function cwEntries(){
+  return Object.entries(UD.progress)
+    .map(([id, v]) => ({f: byId(id), ...v}))
+    .filter(e => e.f)
+    .sort((a, b) => b.ts - a.ts);
+}
+function renderCW(){
+  const w = $('#cwWrap'), es = cwEntries();
+  if(!es.length){ w.hidden = true; w.innerHTML = ''; return; }
+  w.hidden = false;
+  w.innerHTML = rowHTML('Continue Watching',
+    es.map(e => cardHTML(e.f, {cw: 1,
+      pct: Math.min(100, Math.round(e.sec / totalOf(e.f) * 100)),
+      left: Math.max(1, Math.round((totalOf(e.f) - e.sec) / 60)) + 'm left'})).join(''),
+    {genre: 'All'});
+  refreshIcons();
+}
+/* hero */
+let heroI = 0, heroT = null;
+function heroContent(f){
+  $('#heroEyebrow').innerHTML =
+    `${f.og ? 'Rubine Original' : 'Featured'} <i>·</i> ${f.type === 'series' ? 'Series' : 'Film'}`;
+  $('#heroTitle').textContent = f.t;
+  $('#heroMeta').innerHTML =
+    `<b>${match(f)}% match</b><span>${f.y}</span><span>${fmtDur(f)}</span><span class="hbadge">${f.r}</span><span>${f.g.slice(0,2).join(' · ')}</span>`;
+  $('#heroSyn').textContent = f.syn;
+  $('#hero').dataset.id = f.id;
+  const hb = $('#heroAdd');
+  hb.dataset.id = f.id;
+  hb.innerHTML = `<i data-lucide="${inList(f.id) ? 'check' : 'plus'}"></i>`;
+  refreshIcons();
+  ['.heroEyebrow','.heroTitle','.heroMeta','.heroSyn','.heroBtns'].forEach(s => {
+    const el = $(s); el.classList.remove('in'); void el.offsetWidth; el.classList.add('in');
+  });
+  $$('#heroDots .hd').forEach((d, j) => {
+    const fl = d.querySelector('.fill');
+    d.classList.toggle('on', j === heroI);
+    fl.style.animation = 'none';
+    if(j === heroI){ void fl.offsetWidth; fl.style.animation = ''; }
+  });
+}
+function heroShow(i){
+  heroI = i;
+  const f = FEATS[i];
+  const cur = $('.heroImg.on'), nxt = cur.id === 'heroA' ? $('#heroB') : $('#heroA');
+  nxt.onload = () => { nxt.classList.add('on'); cur.classList.remove('on'); };
+  nxt.src = backdrop(f);
+  heroContent(f);
+}
+function heroInit(){
+  heroI = 0;
+  $('#heroDots').innerHTML = FEATS.map((f, i) =>
+    `<button class="hd" data-action="heroDot" data-i="${i}" aria-label="Feature ${i+1}"><span class="fill"></span></button>`).join('');
+  const A = $('#heroA');
+  A.src = backdrop(FEATS[0]); A.classList.add('on');
+  heroContent(FEATS[0]); heroStart();
+}
+function heroStart(){ if(!heroT && session) heroT = setInterval(() => heroShow((heroI + 1) % FEATS.length), 9000); }
+function heroStop(){ clearInterval(heroT); heroT = null; }
+function heroRestart(){ heroStop(); heroStart(); }
+
+function buildHome(){
+  heroInit();
+  const rows = [];
+  rows.push(rowHTML('Trending This Week',
+    FILMS.slice().sort((a, b) => b.hot - a.hot).slice(0, 12).map(f => cardHTML(f)).join(''), {genre: 'All'}));
+  rows.push(spotlightHTML(byId('paper-suns')));
+  rows.push(rowHTML('Top 10 on Rubine Today',
+    FILMS.slice().sort((a, b) => b.hot - a.hot).slice(0, 10)
+      .map((f, i) => `<div class="topItem" data-action="open" data-id="${f.id}"><div class="rank">${i + 1}</div>${cardHTML(f)}</div>`).join('')));
+  rows.push(rowHTML('New This Season',
+    FILMS.filter(f => f.y >= 2025).map(f => cardHTML(f)).join(''), {genre: 'All'}));
+  const gRow = (title, gs) => rowHTML(title,
+    FILMS.filter(f => f.g.some(g => gs.includes(g))).sort((a, b) => b.score - a.score).map(f => cardHTML(f)).join(''),
+    {genre: gs[0]});
+  rows.push(gRow('Noir & Crime', ['Noir', 'Thriller']));
+  rows.push(gRow('Sci-Fi & Beyond', ['Sci-Fi']));
+  rows.push(gRow('Matters of the Heart', ['Romance']));
+  rows.push(gRow('Laugh Track', ['Comedy']));
+  rows.push(gRow('Lights Off', ['Horror']));
+  rows.push(gRow('True Stories', ['Documentary']));
+  rows.push(gRow('Worlds Beyond', ['Fantasy', 'Adventure', 'Historical', 'Western']));
+  $('#rows').innerHTML = rows.join('');
+  renderCW();
+  homeBuilt = true;
+  refreshIcons();
+}
+
+/* ================= VIEWS ================= */
+function go(view){
+  $$('.view').forEach(v => v.hidden = true);
+  $('#view' + view[0].toUpperCase() + view.slice(1)).hidden = false;
+  $$('#nav .nlink').forEach(l => l.classList.toggle('on', l.dataset.view === view));
+  window.scrollTo({top: 0});
+  if(view === 'home' && !homeBuilt) buildHome();
+}
+let mv = {g: 'All', type: 'All', sort: 'hot'};
+function renderMovies(genre){
+  if(genre) mv.g = genre;
+  $('#genreChips').innerHTML = ['All', ...GENRES].map(g =>
+    `<button class="chip ${g === mv.g ? 'on' : ''}" data-action="mvg" data-id="${esc(g)}">${esc(g)}</button>`).join('');
+  $$('#segType button').forEach(b => b.classList.toggle('on', b.dataset.id === mv.type));
+  let list = FILMS.filter(f =>
+    (mv.g === 'All' || f.g.includes(mv.g)) && (mv.type === 'All' || f.type === mv.type));
+  const s = mv.sort;
+  list.sort((a, b) => s === 'hot' ? b.hot - a.hot : s === 'score' ? b.score - a.score
+          : s === 'y' ? b.y - a.y : a.t.localeCompare(b.t));
+  $('#moviesGrid').innerHTML = list.map(f => cardHTML(f)).join('') ||
+    emptyHTML('film', 'Nothing in this combination yet.', 'Loosen a filter — cinema is bigger than one shelf.');
+  $('#mvCount').textContent = `${list.length} titles · every one of them fictional`;
+  refreshIcons();
+}
+function renderList(){
+  const items = UD.list.map(byId).filter(Boolean);
+  $('#listGrid').innerHTML = items.length
+    ? items.map(f => cardHTML(f)).join('')
+    : emptyHTML('bookmark', 'Your list is empty.', 'Hover any poster and press + — I\u2019ll keep them warm.', 'Browse films');
+  refreshIcons();
+}
+function emptyHTML(icon, head, sub, btn){
+  return `<div class="empty"><i data-lucide="${icon}"></i><h3>${head}</h3><p>${sub}</p>
+    ${btn ? `<button class="btn play" data-action="go" data-view="movies">${btn}</button>` : ''}</div>`;
+}
+function searchFilms(q){
+  q = q.toLowerCase().trim();
+  return FILMS.filter(f =>
+    f.t.toLowerCase().includes(q) || f.dir.toLowerCase().includes(q) ||
+    f.g.some(g => g.toLowerCase().includes(q)) ||
+    f.cast.some(c => c.toLowerCase().includes(q)));
+}
+function renderSearch(q){
+  $('#searchTitle').textContent = `Results for \u201C${q}\u201D`;
+  const r = searchFilms(q);
+  $('#searchGrid').innerHTML = r.length
+    ? r.map(f => cardHTML(f)).join('')
+    : emptyHTML('search', 'No matches found.', `Nothing on our shelves answers to \u201C${q}\u201D. Try a genre, an actor, or a mood in Grok.`);
+  refreshIcons();
+}
+function doSearchView(){
+  const q = $('#sIn').value.trim();
+  if(!q) return;
+  go('search'); renderSearch(q);
+  hideSDrop(); $('#sIn').blur(); $('#navSearchBox').classList.remove('open');
+}
+
+/* ---------- my list ---------- */
+function toggleList(id){
+  if(!session) return;
+  if(inList(id)){
+    UD.list = UD.list.filter(x => x !== id);
+    toast('Removed from My List', 'minus');
+  } else {
+    UD.list.push(id);
+    toast('Added to My List', 'plus');
+  }
+  saveUD(); syncListButtons(id);
+  if(!$('#viewList').hidden) renderList();
+}
+function syncListButtons(id){
+  $$(`[data-action="toggleList"][data-id="${id}"]`).forEach(b => {
+    b.innerHTML = `<i data-lucide="${inList(id) ? 'check' : 'plus'}"></i>`;
+  });
+  refreshIcons();
+}
+
+/* ================= MODAL ================= */
+function openModal(id){
+  const f = byId(id); if(!f) return;
+  renderModal(f);
+  $('#modal').hidden = false;
+  document.body.classList.add('lock');
+  heroStop(); closeDrops();
+}
+function closeModal(){
+  if($('#modal').hidden) return;
+  $('#modal').hidden = true;
+  if($('#player').hidden) document.body.classList.remove('lock');
+  heroStart();
+}
+function renderModal(f){
+  const ml = FILMS.filter(x => x.id !== f.id && x.g.some(g => f.g.includes(g)))
+                  .sort((a, b) => b.score - a.score).slice(0, 6);
+  $('#modalCard').innerHTML = `
+  <div class="mHero">
+    <img src="${backdrop(f)}" alt="">
+    <div class="mScrim"></div>
+    <button class="mClose" data-action="closeModal" aria-label="Close"><i data-lucide="x"></i></button>
+    <div class="mHead">
+      <h2>${esc(f.t)}</h2>
+      <div class="mMeta"><b>${match(f)}% match</b><span>${f.y}</span><span>${fmtDur(f)}</span><span class="hbadge">${f.r}</span><span>${f.g.join(' · ')}</span></div>
+      <div class="mBtns">
+        <button class="btn play" data-action="play" data-id="${f.id}"><i data-lucide="play"></i>Play</button>
+        <button class="btn ghost" data-action="toggleList" data-id="${f.id}"><i data-lucide="${inList(f.id) ? 'check' : 'plus'}"></i>${inList(f.id) ? 'In My List' : 'My List'}</button>
+      </div>
+    </div>
+  </div>
+  <div class="mBody">
+    <p class="mSyn">${esc(f.syn)}</p>
+    <dl class="mFacts">
+      <div><dt>Cast</dt><dd>${f.cast.join(', ')}</dd></div>
+      <div><dt>Director</dt><dd>${f.dir}</dd></div>
+      <div><dt>Genres</dt><dd>${f.g.join(', ')}</dd></div>
+      <div><dt>Score</dt><dd>${f.score.toFixed(1)} / 10 · rated ${f.r}</dd></div>
+    </dl>
+    ${f.fact ? `<div class="mFact"><i data-lucide="sparkles"></i><span><b>Trivia · </b>${esc(f.fact)}</span></div>` : ''}
+    <div class="mMLT"><h3>More Like This</h3><div class="mGrid">
+      ${ml.map(x => `<div class="mMini" data-action="open" data-id="${x.id}">
+        <img loading="lazy" src="${poster(x)}" alt="">
+        <div class="mMiniB"><b>${esc(x.t)}</b>
+          <div class="mMiniM"><em>${match(x)}% match</em><span>${x.y}</span><span class="hbadge">${x.r}</span></div>
+          <p>${esc(x.syn)}</p>
+        </div></div>`).join('')}
+    </div></div>
+  </div>`;
+  $('#modalCard').scrollTop = 0;
+  refreshIcons();
+}
+
+/* ================= PLAYER ================= */
+const PL = {f: null, cur: 0, total: 0, playing: false, cc: false, scene: 0, sceneT: 0, ended: false, int: null};
+const gc = $('#plGrain'), gx = gc.getContext('2d');
+let grainRAF = null, uiT = null, flashT = null;
+
+const SUBS = [
+  (a, b) => `${a}: We don\u2019t get to choose how it starts.`,
+  (a, b) => `${b}: Only how we\u2019re remembered.`,
+  (a, b) => `${a}: You said the route was safe.`,
+  (a, b) => `${b}: I said it was mapped. Different thing.`,
+  (a, b) => `${a}: How much time do we have?`,
+  (a, b) => `${b}: Less than we deserve.`,
+  (a, b) => `${a}: I keep thinking about the tide that night.`,
+  (a, b) => `${b}: Don\u2019t. The tide has stopped thinking about you.`,
+  (a, b) => `${a}: If I go through with this\u2014`,
+  (a, b) => `${b}: You won\u2019t have to finish that sentence.`,
+];
+
+function openPlayer(id, resume = 0){
+  const f = byId(id); if(!f) return;
+  closeModal();
+  PL.f = f; PL.total = totalOf(f);
+  PL.cur = Math.min(resume || 0, PL.total - 1);
+  PL.playing = true; PL.ended = false; PL.cc = false; PL.sceneT = 0;
+  $('#plCC').classList.remove('on');
+  $('#plTitle').textContent = f.t;
+  [1, 2, 3].forEach((n, i) => $('#plS' + i).style.backgroundImage = `url("${sceneImg(f, n)}")`);
+  setScene(0);
+  $('#plEnd').hidden = true; $('#plPause').hidden = true; $('#plSkip').hidden = false;
+  $('#player').hidden = false;
+  document.body.classList.add('lock');
+  heroStop(); hideSDrop(); closeDrops();
+  setPlayIcon(); pokeUI(); grainStart();
+  clearInterval(PL.int); PL.int = setInterval(tick, 500);
+}
+function closePlayer(){
+  if(!PL.f) return;
+  clearInterval(PL.int); PL.int = null;
+  cancelAnimationFrame(grainRAF); grainRAF = null;
+  if(document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  const pct = PL.cur / PL.total;
+  if(PL.ended || pct < 0.02) delete UD.progress[PL.f.id];
+  else if(PL.cur > 40){
+    UD.progress[PL.f.id] = {sec: Math.floor(PL.cur), ts: Date.now()};
+    toast('Saved to Continue Watching', 'clock');
+  }
+  saveUD(); renderCW();
+  $('#player').hidden = true;
+  $('#player').classList.remove('hideUi');
+  document.body.classList.remove('lock');
+  PL.playing = false; PL.f = null;
+  heroStart();
+}
+function tick(){
+  if(PL.playing){
+    PL.cur = Math.min(PL.total, PL.cur + 0.5);
+    PL.sceneT += 0.5;
+    if(PL.sceneT > 9.5) setScene((PL.scene + 1) % 3);
+    if(PL.cur >= PL.total) endFilm();
+  }
+  updateSeek(); updateCredits(); updateSubs();
+  $('#plSkip').hidden = !(PL.cur < 11.5 && !PL.ended);
+}
+function setScene(i){
+  PL.scene = i; PL.sceneT = 0;
+  $$('.plScene').forEach((s, j) => {
+    s.classList.toggle('on', j === i);
+    if(j === i){ s.style.animation = 'none'; void s.offsetWidth; s.style.animation = ''; }
+  });
+}
+function updateSeek(){
+  const pct = PL.total ? PL.cur / PL.total * 100 : 0;
+  $('#plFill').style.width = pct + '%';
+  $('#plDot').style.left = pct + '%';
+  $('#plTime').textContent = fmtTime(PL.cur) + ' / ' + fmtTime(PL.total);
+}
+function updateCredits(){
+  const c = $('#plCredits'), t = PL.cur;
+  let html = null;
+  if(t < 4)        html = `<div class="c1">Rubine presents</div>`;
+  else if(t < 8)   html = `<div class="c2">${esc(PL.f.t)}</div>`;
+  else if(t < 11.5)html = `<div class="c3">directed by ${esc(PL.f.dir)}</div>`;
+  if(html === null) c.classList.remove('show');
+  else { if(c.dataset.h !== html){ c.innerHTML = html; c.dataset.h = html; } c.classList.add('show'); }
+}
+function updateSubs(){
+  const el = $('#plSubs');
+  if(!PL.cc || PL.ended || $('#plCredits').classList.contains('show')){ el.textContent = ''; return; }
+  const t = PL.cur, idx = Math.floor(t / 7) % SUBS.length, inWin = (t % 7) < 4.6;
+  const line = SUBS[idx](PL.f.cast[0], PL.f.cast[1] || '\u2014');
+  el.innerHTML = inWin ? `<span>${esc(line)}</span>` : '';
+}
+function togglePlay(){
+  if(!PL.f) return;
+  if(PL.ended){ PL.cur = 0; PL.ended = false; $('#plEnd').hidden = true; }
+  PL.playing = !PL.playing;
+  setPlayIcon();
+  $('#plPause').hidden = PL.playing;
+  pokeUI();
+}
+function setPlayIcon(){
+  $('#plPlay').innerHTML = `<i data-lucide="${PL.playing ? 'pause' : 'play'}"></i>`;
+  refreshIcons();
+}
+function endFilm(){
+  PL.playing = false; PL.cur = PL.total; PL.ended = true;
+  setPlayIcon(); $('#plPause').hidden = true; $('#plEnd').hidden = false;
+  $('#plEndSub').textContent = `\u201C${PL.f.t}\u201D · ${fmtTime(PL.total)} · score ${PL.f.score.toFixed(1)}`;
+}
+function pokeUI(){
+  const p = $('#player');
+  p.classList.remove('hideUi');
+  clearTimeout(uiT);
+  if(PL.playing) uiT = setTimeout(() => p.classList.add('hideUi'), 3200);
+}
+function flash(t){
+  const f = $('#plFlash');
+  f.textContent = t; f.classList.add('show');
+  clearTimeout(flashT);
+  flashT = setTimeout(() => f.classList.remove('show'), 750);
+}
+function grainStart(){
+  cancelAnimationFrame(grainRAF);
+  let last = 0;
+  const step = t => {
+    if($('#player').hidden){ grainRAF = null; return; }
+    if(t - last > 70){
+      last = t;
+      const w = gc.width, h = gc.height;
+      const img = gx.createImageData(w, h), d = img.data;
+      for(let i = 0; i < d.length; i += 4){
+        const v = Math.random() * 255 | 0;
+        d[i] = d[i+1] = d[i+2] = v; d[i+3] = 255;
+      }
+      gx.putImageData(img, 0, 0);
+    }
+    grainRAF = requestAnimationFrame(step);
+  };
+  grainRAF = requestAnimationFrame(step);
+}
+function bindPlayer(){
+  $('#plBack').onclick  = closePlayer;
+  $('#plPlay').onclick  = togglePlay;
+  $('#plBack10').onclick = () => {
+    PL.cur = Math.max(0, PL.cur - 10);
+    if(PL.ended){ PL.ended = false; $('#plEnd').hidden = true; }
+    flash('\u2212 10 seconds');
+  };
+  $('#plFwd10').onclick = () => {
+    PL.cur = Math.min(PL.total, PL.cur + 10);
+    flash('+ 10 seconds');
+    if(PL.cur >= PL.total && !PL.ended) endFilm();
+  };
+  $('#plCC').onclick = () => {
+    PL.cc = !PL.cc;
+    $('#plCC').classList.toggle('on', PL.cc);
+    toast(PL.cc ? 'Subtitles on' : 'Subtitles off', 'captions');
+    updateSubs();
+  };
+  $('#plFull').onclick = () => {
+    if(document.fullscreenElement) document.exitFullscreen();
+    else $('#player').requestFullscreen().catch(() => {});
+  };
+  $('#plAgain').onclick = () => {
+    PL.cur = 0; PL.ended = false; PL.playing = true;
+    $('#plEnd').hidden = true; setPlayIcon(); pokeUI();
+  };
+  $('#plExit').onclick = closePlayer;
+  $('#plSkip').onclick = () => { PL.cur = 12.6; updateSeek(); flash('Skipped the credits'); };
+  $('#player').addEventListener('mousemove', pokeUI);
+  $('#plStage').addEventListener('click', e => {
+    if(e.target.closest('.plTop, .plEnd, .plSkip, .plFlash, .plSubs')) return;
+    togglePlay();
+  });
+  /* seek bar */
+  const sk = $('#plSeek');
+  let seeking = false;
+  const seekTo = e => {
+    const r = sk.getBoundingClientRect();
+    const p = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+    PL.cur = p * PL.total;
+    if(PL.ended && PL.cur < PL.total){ PL.ended = false; $('#plEnd').hidden = true; }
+    updateSeek(); updateSubs(); updateCredits();
+  };
+  sk.addEventListener('pointerdown', e => { seeking = true; sk.setPointerCapture(e.pointerId); seekTo(e); });
+  sk.addEventListener('pointermove', e => { if(seeking) seekTo(e); });
+  sk.addEventListener('pointerup',   () => seeking = false);
+}
+
+/* ================= GROK ================= */
+const G = {busy: false, greeted: false};
+const CHIPS = ['What\u2019s trending?', 'Something scary', 'A mind-bending sci-fi', 'Something short', 'Surprise me'];
+const GREET = 'I\u2019m Grok — resident cinephile of this raspberry-colored cinema. Tell me a mood, a genre, or an actor\u2019s name and I\u2019ll handle the rest.\n\nTry \u201Csomething scary\u201D, \u201Cwhat\u2019s trending\u201D, or name any film — I know all thirty of them personally.';
+const HELP  = 'Here is my entire skill set, honestly presented:\n— recommend by mood or genre (\u201Ca mind-bending sci-fi\u201D)\n— \u201Cwhat\u2019s trending\u201D, \u201Ctop rated\u201D, \u201Csomething short\u201D\n— \u201Ctell me about The Last Signal\u201D, or any title\n— \u201Cadd Crimson Meridian to my list\u201D\n— \u201Cplay Paper Suns\u201D — I\u2019ll roll it right here\n— search by actor: try \u201CAda Reyes\u201D';
+const FALLBACK = 'I\u2019m a movie concierge with strong opinions and no off switch — but that request is outside my shelf. Give me a genre, a mood, a title, or an actor\u2019s name. Or just say \u201Csurprise me\u201D.';
+const MOODS = [
+  {k:/\b(scary|horror|fright|spooky|creepy|nightmare)\b/, g:['Horror'], line:'Lights off, heart rate up. My professional recommendation:'},
+  {k:/\b(funny|comedy|laugh|humor|humour|lighthearted|cheer)\b/, g:['Comedy'], line:'You want to laugh until it becomes suspicious. Say no more:'},
+  {k:/\b(romantic|romance|love|date night|valentine)\b/, g:['Romance'], line:'For the hopelessly — and temporarily — romantic:'},
+  {k:/\b(sad|cry|tear|melanchol|heartbreak|tissue)\b/, g:['Drama'], line:'You want to feel things in a controlled environment. Respect:'},
+  {k:/\b(mind[- ]?bend|twist|brain|psycho|trippy|confus)\b/, g:['Sci-Fi','Thriller'], line:'Something that rewires you slightly. Standard warning: you\u2019ll rewatch it immediately.'},
+  {k:/\b(action|fast|adrenaline|chase|fight|explosi)\b/, g:['Action'], line:'High velocity, questionable physics, excellent evening:'},
+  {k:/\b(documentary|true story|real)\b/, g:['Documentary'], line:'Reality, but curated. The best kind:'},
+  {k:/\b(noir|crime|detective|mystery|moody)\b/, g:['Noir'], line:'Rain-slick streets ahead. Watch it in a dim room for the full effect:'},
+  {k:/\b(fantasy|magic|otherworld|myth|escape)\b/, g:['Fantasy','Adventure'], line:'The portal is open. Mind the step:'},
+  {k:/\b(feel[- ]?good|cozy|comfort|warm|gentle)\b/, g:['Romance','Comedy'], line:'Emotional blanket incoming:'},
+  {k:/\b(sci[- ]?fi|space|future|dystop|robot|alien)\b/, g:['Sci-Fi'], line:'To the future, then — pick your flavor:'},
+];
+function renderChips(){
+  $('#gChips').innerHTML = CHIPS.map(c =>
+    `<button class="chip" data-action="chip" data-q="${esc(c)}">${esc(c)}</button>`).join('');
+}
+function grokToggle(){
+  const p = $('#grokPanel');
+  if(p.hidden){
+    p.hidden = false;
+    $('#fabPing').hidden = true;
+    if(!G.greeted){ G.greeted = true; grokBot(GREET); }
+    setTimeout(() => $('#gInput').focus(), 80);
+  } else p.hidden = true;
+}
+function grokClear(){
+  $('#gMsgs').innerHTML = '';
+  G.greeted = true;
+  grokBot(GREET);
+}
+function addMsg(role){
+  const m = document.createElement('div');
+  m.className = 'msg ' + role;
+  $('#gMsgs').append(m); scrollG();
+  return m;
+}
+function scrollG(){ const g = $('#gMsgs'); g.scrollTop = g.scrollHeight; }
+function grokBot(text){
+  const m = addMsg('g');
+  m.innerHTML = esc(text).replace(/\n/g, '<br>');
+  scrollG();
+}
+function userMsg(q){ const m = addMsg('u'); m.textContent = q; }
+async function respond(q){
+  G.busy = true;
+  const ty = addMsg('g typing');
+  ty.innerHTML = '<i></i><i></i><i></i>';
+  const r = computeReply(q);
+  await sleep(r.delay ?? (650 + Math.random() * 450));
+  ty.remove();
+  const m = addMsg('g'); m.textContent = '';
+  for(let i = 0; i < r.text.length; i += 3){
+    m.textContent = r.text.slice(0, i + 3);
+    scrollG(); await sleep(11);
+  }
+  m.innerHTML = esc(r.text).replace(/\n/g, '<br>');
+  if(r.picks && r.picks.length) appendPicks(r.picks);
+  scrollG();
+  if(r.after) r.after();
+  G.busy = false;
+  if(!$('#grokPanel').hidden) $('#gInput').focus();
+}
+function appendPicks(ids){
+  const wrap = document.createElement('div');
+  wrap.className = 'gPicks';
+  wrap.innerHTML = ids.map(id => {
+    const f = byId(id);
+    return `<button class="gPick" data-action="open" data-id="${f.id}">
+      <img src="${poster(f)}" alt="">
+      <span class="gpT"><b>${esc(f.t)}</b><small>${f.y} · ${f.g[0]} · <em>${f.score.toFixed(1)}</em></small></span>
+      <i data-lucide="chevron-right"></i></button>`;
+  }).join('');
+  $('#gMsgs').append(wrap); refreshIcons(); scrollG();
+}
+function findTitle(q){
+  q = q.trim().toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ');
+  if(q.length < 3) return null;
+  let best = null, bs = 0;
+  for(const f of FILMS){
+    const t = f.t.toLowerCase();
+    let s = 0;
+    if(t === q || t.includes(q) || q.includes(t)) s = 10;
+    else {
+      const tw = t.split(' '), qw = q.split(' ');
+      tw.forEach(a => qw.forEach(b => {
+        if(a.length > 3 && b.length > 3 && (a === b || a.startsWith(b) || b.startsWith(a))) s++;
+      }));
+    }
+    if(s > bs){ bs = s; best = f; }
+  }
+  return bs >= 2 ? best : null;
+}
+function about(f){
+  return {text: `\u201C${f.t}\u201D — ${f.y} · ${fmtDur(f)} · ${f.r} · ${f.g.join(', ')}\n\n${f.syn}\n\n${f.fact}`, picks: [f.id]};
+}
+function computeReply(raw){
+  const q = raw.toLowerCase().replace(/[?!.,;:"']/g, ' ').replace(/\s+/g, ' ').trim();
+  let m;
+
+  /* — add to list — */
+  if(m = q.match(/add (.+?) to (?:my |the )?(?:list|watch ?list)/)){
+    const f = findTitle(m[1]);
+    if(f) return {text: `Done — \u201C${f.t}\u201D is in your list. I\u2019ll act like it was your idea.`,
+                  picks: [f.id], after: () => { if(!inList(f.id)) toggleList(f.id); }};
+    return {text: `I searched every shelf twice — no \u201C${m[1].trim()}\u201D here. Either the spelling wandered, or you invented a film. Both are fine; only one plays.`};
+  }
+  /* — play — */
+  if(m = q.match(/(?:play|start watching|put on|roll) (.+)/)){
+    if(!/^(something|anything|whatever|some|random|else)\b/.test(m[1])){
+      const f = findTitle(m[1]);
+      if(f) return {text: `Rolling \u201C${f.t}\u201D now. The opening credits alone are worth putting your phone down for.`,
+                    picks: [f.id], after: () => setTimeout(() => openPlayer(f.id), 900)};
+    }
+  }
+  /* — about a title — */
+  if(m = q.match(/(?:tell me about|synopsis of|plot of|what is|whats) (.+)/)){
+    const f = findTitle(m[1]);
+    if(f) return about(f);
+  }
+  /* — director — */
+  if(m = q.match(/who (?:directed|made) (.+)/)){
+    const f = findTitle(m[1]);
+    if(f) return {text: `\u201C${f.t}\u201D was directed by ${f.dir}.\n\n${f.fact}`, picks: [f.id]};
+    return {text: 'No director by that name on my shelves. Try a title instead — I know all thirty of them personally.'};
+  }
+  /* — runtime — */
+  if(m = q.match(/how long is (.+)|runtime of (.+)/)){
+    const f = findTitle(m[1] || m[2] || '');
+    if(f) return {text: `\u201C${f.t}\u201D runs ${fmtDur(f).toLowerCase()}. ${f.len.s ? 'One sitting per episode — that\u2019s the law.' : 'Genuinely watchable in one sitting.'}`, picks: [f.id]};
+  }
+  if(/^how long/.test(q)) return {text: 'Long enough. Give me a title and I\u2019ll be precise.'};
+
+  /* — intents — */
+  if(/\b(help|what can you do|abilities|commands|options)\b/.test(q)) return {text: HELP};
+  if(/who are you|what are you|are you real|are you grok/.test(q))
+    return {text: 'I\u2019m Grok — the concierge who lives inside this page. No cloud, no account, no patience for bad cinema. Everything I know is right here in your browser.'};
+  if(/trend|popular|hype|everyone/.test(q))
+    return {text: 'Trending this week. The algorithm is insufferable about these, and for once it\u2019s right:',
+            picks: FILMS.slice().sort((a, b) => b.hot - a.hot).slice(0, 5).map(f => f.id)};
+  if(/top rated|best|highest|critic|award|score/.test(q))
+    return {text: 'The critical altar — the highest-rated titles on Rubine:',
+            picks: FILMS.slice().sort((a, b) => b.score - a.score).slice(0, 5).map(f => f.id)};
+  if(/surprise|random|whatever|dealers choice|dice|fate/.test(q)){
+    const f = FILMS[Math.floor(Math.random() * FILMS.length)];
+    return {text: `Dice rolled behind my back: \u201C${f.t}\u201D.\n\n${f.fact}`, picks: [f.id]};
+  }
+  if(/thank|thx|appreciate|cheers/.test(q))
+    return {text: 'Anytime. I only exist for this — literally, check the source.'};
+  if(/^(hi|hello|hey|yo|sup|hiya|good (morning|evening|afternoon))\b/.test(q))
+    return {text: 'Hey. Name a mood, a genre, or a film — I\u2019ll handle the decisions you were pretending to make. (\u201CSurprise me\u201D also works.)'};
+  /* — length — */
+  if(/\b(short|quick|brief)\b|under (?:an hour|100|90)/.test(q))
+    return {text: 'Long taste, short attention span — all of these clock in under an hour and a half:',
+            picks: FILMS.filter(f => f.len.d && f.len.d <= 100).sort((a, b) => b.score - a.score).slice(0, 4).map(f => f.id)};
+  if(/\b(long|epic|marathon)\b|two hours|commit/.test(q))
+    return {text: 'Clear the evening, silence the phone. These ask for — and earn — the runtime:',
+            picks: FILMS.filter(f => f.len.d && f.len.d >= 130).sort((a, b) => b.score - a.score).slice(0, 4).map(f => f.id)};
+  /* — moods — */
+  for(const md of MOODS){
+    if(md.k.test(q)){
+      const picks = FILMS.filter(f => f.g.some(g => md.g.includes(g)))
+        .sort((a, b) => b.score - a.score).slice(0, 4).map(f => f.id);
+      if(picks.length) return {text: md.line, picks};
+    }
+  }
+  /* — plain genre — */
+  for(const g of GENRES){
+    if(q.includes(g.toLowerCase())){
+      const picks = FILMS.filter(f => f.g.includes(g)).sort((a, b) => b.score - a.score).slice(0, 5).map(f => f.id);
+      if(picks.length) return {text: `${g}, straight up. My picks:`, picks};
+    }
+  }
+  /* — cast / person — */
+  for(const f of FILMS){
+    for(const c of f.cast){
+      if(c.toLowerCase().split(' ').some(n => n.length > 3 && q.includes(n))){
+        const picks = FILMS.filter(x => x.cast.includes(c)).map(x => x.id);
+        return {text: `${c} — solid taste. You\u2019ll find them in:`, picks};
+      }
+    }
+  }
+  /* — bare title — */
+  const f = findTitle(q);
+  if(f) return about(f);
+  if(/recommend|suggest|what (?:should|to) watch|ideas/.test(q))
+    return {text: 'That\u2019s my entire job description, so let\u2019s narrow it. Give me a mood (\u201Cdark\u201D, \u201Ccozy\u201D, \u201Cmind-bending\u201D) or a genre — or say \u201Csurprise me\u201D and I\u2019ll choose for you.'};
+  return {text: FALLBACK};
+}
+function bindGrok(){
+  $('#gForm').addEventListener('submit', e => {
+    e.preventDefault();
+    if(G.busy) return;
+    const v = $('#gInput').value.trim();
+    if(!v) return;
+    $('#gInput').value = '';
+    userMsg(v); respond(v);
+  });
+}
+
+/* ================= GLOBAL ================= */
+const ctxId = t => t.dataset.id || (t.closest('[data-id]') ? t.closest('[data-id]').dataset.id : null);
+function closeDrops(){ $$('.drop').forEach(d => d.hidden = true); }
+function toggleDrop(sel){
+  const d = $(sel), open = d.hidden;
+  closeDrops();
+  d.hidden = !open;
+  if(!d.hidden && sel === '#bellDrop') $('#bellDot').hidden = true;
+}
+function hideSDrop(){ $('#sDrop').hidden = true; }
+function buildBell(){
+  const ns = ['neon-harvest', 'the-understudy', 'blue-hour-heist'].map(byId);
+  $('#bellList').innerHTML = ns.map(f => `
+    <div class="nItem" data-action="open" data-id="${f.id}">
+      <img loading="lazy" src="${poster(f)}" alt="">
+      <span><em>NEW ON RUBINE</em><b>${esc(f.t)}</b><small>${f.y} · ${f.g[0]}</small></span>
+    </div>`).join('');
+}
+document.addEventListener('click', e => {
+  const a = e.target.closest('[data-action]');
+  if(!a){ if(!e.target.closest('.drop')) closeDrops(); return; }
+  const act = a.dataset.action, id = ctxId(a);
+  switch(act){
+    case 'open':       openModal(id); closeDrops(); break;
+    case 'play':       closeDrops(); openPlayer(id, UD && UD.progress[id] ? UD.progress[id].sec : 0); break;
+    case 'toggleList': toggleList(id); break;
+    case 'closeModal': closeModal(); break;
+    case 'go':         go(a.dataset.view); closeDrops(); break;
+    case 'rowPrev': case 'rowNext': {
+      const sc = a.closest('.row').querySelector('.rowScroller');
+      sc.scrollBy({left: (act === 'rowNext' ? 1 : -1) * sc.clientWidth * .85, behavior: 'smooth'});
+      break;
+    }
+    case 'heroDot':    heroShow(+a.dataset.i); heroRestart(); break;
+    case 'bell':       toggleDrop('#bellDrop'); break;
+    case 'profile':    toggleDrop('#profDrop'); break;
+    case 'logout':     logout(); break;
+    case 'grokToggle': grokToggle(); break;
+    case 'grokClear':  grokClear(); break;
+    case 'chip':       if(!G.busy){ userMsg(a.dataset.q); respond(a.dataset.q); } break;
+    case 'searchAll':  doSearchView(); break;
+    case 'mvg':        mv.g = a.dataset.id; renderMovies(); break;
+    case 'mtype':      mv.type = a.dataset.id; renderMovies(); break;
+  }
+});
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape'){
+    if(!$('#player').hidden){ if(!document.fullscreenElement) closePlayer(); return; }
+    if(!$('#modal').hidden){ closeModal(); return; }
+    if(!$('#grokPanel').hidden){ $('#grokPanel').hidden = true; return; }
+    closeDrops(); hideSDrop();
+  }
+  if(e.key === '/' && !$('#app').hidden && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){
+    e.preventDefault();
+    $('#navSearchBox').classList.add('open');
+    $('#sIn').focus();
+  }
+});
+window.addEventListener('scroll', () => {
+  $('#nav').classList.toggle('solid', scrollY > 30);
+}, {passive: true});
+function bindNav(){
+  $('#sBtn').onclick = () => { $('#navSearchBox').classList.add('open'); $('#sIn').focus(); };
+  $('#sIn').addEventListener('input', () => {
+    const q = $('#sIn').value.trim();
+    if(q.length < 2){ hideSDrop(); return; }
+    const r = searchFilms(q);
+    $('#sDrop').innerHTML = r.length
+      ? r.slice(0, 6).map(f => `
+          <div class="sItem" data-action="open" data-id="${f.id}">
+            <img loading="lazy" src="${poster(f)}" alt="">
+            <span><b>${esc(f.t)}</b><small>${f.y} · ${f.g[0]}${f.type === 'series' ? ' · Series' : ''}</small></span>
+          </div>`).join('')
+        + `<button class="sAll" data-action="searchAll">See all results (${r.length})</button>`
+      : `<div class="sEmpty">No matches. Ask Grok — he loves this part.</div>`;
+    $('#sDrop').hidden = false;
+  });
+  $('#sIn').addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); doSearchView(); } });
+  $('#sIn').addEventListener('blur', () => setTimeout(hideSDrop, 160));
+  $('#sortSel').addEventListener('change', e => { mv.sort = e.target.value; renderMovies(); });
+}
+
+/* ================= INIT ================= */
+window.addEventListener('DOMContentLoaded', () => {
+  refreshIcons();
+  initAuth(); bindPlayer(); bindGrok(); bindNav();
+  const s = store.get('rubine_session');
+  if(s && (s.guest || store.get('rubine_users', {})[s.email])) enter(s);
+});
+</script>
+</body>
+</html>
